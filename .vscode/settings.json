@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "*.inc": "c",
+        "limits": "c",
+        "*.tcc": "c",
+        "cmath": "c",
+        "sm9.h": "c",
+        "relic_test.h": "c",
+        "RELIC_FPX_LOW.H": "cpp",
+        "relic_bn_low.h": "c",
+        "pthread.h": "c",
+        "relic.h": "c",
+        "error.h": "c",
+        "asn1.h": "c",
+        "oid.h": "c",
+        "sm3.h": "c",
+        "mem.h": "c",
+        "test_sm9_sign": "c",
+        "debug.h": "c"
+    }
+}

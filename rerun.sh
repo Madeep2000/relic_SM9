@@ -1,0 +1,1 @@
+cd build && cmake .. && make -j8 && ./bin/test_sm9
