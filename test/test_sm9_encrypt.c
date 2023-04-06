@@ -17,6 +17,7 @@
 #include <sys/times.h>
 #include <unistd.h>
 #include <signal.h>
+
 #define hex_ke "0001EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22"
 
 int test_sm9_encrypt() {

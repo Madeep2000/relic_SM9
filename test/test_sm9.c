@@ -1013,6 +1013,7 @@ void test_other_pairing_new(){
 	return 1;
 }
 
+
 int main(int argc, char *argv[]) {
 	if (core_init() != RLC_OK) {
 		core_clean();

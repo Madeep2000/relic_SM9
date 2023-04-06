@@ -18,8 +18,9 @@
 #include <unistd.h>
 #include <signal.h>
 
-void test_sm9_sign(){
+void test_sm9_sign_and_ver(){
 	const char *id = "Alice";
+	// data = "Chinese IBS standard"
 	uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x53, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
 	int idlen = 5;
 	int datalen = 20;
@@ -38,13 +39,9 @@ void test_sm9_sign(){
 	size_t siglen;
 
 	char ks[] = "130E78459D78545CB54C587E02CF480CE0B66340F319F348A1D5B1F2DC5F4";
-	
 	bn_read_str(sign_master.ks,ks,strlen(ks),16);
-
 	ep2_mul_gen(sign_master.Ppubs,sign_master.ks);
-
 		
-	// sm9_sign_master_key_generate(&sign_master);
 	sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_key);
 	sm9_sign_init(&ctx);
 	sm9_sign_update(&ctx,data, datalen);
@@ -55,12 +52,16 @@ void test_sm9_sign(){
 	sm9_verify_update(&ctx, data, datalen);
 	if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
 	format_bytes(stdout, 0, 0, "signature", sig, siglen);
+	//write_file("output.txt",sig,siglen);
+
 	master_key_free(&sign_master);
 	user_key_free(&sign_key);
 
 	return 1;
 err:
 	printf("%s test %d failed\n", __FUNCTION__, j);
+	master_key_free(&sign_master);
+	user_key_free(&sign_key);
 	error_print();
 	return -1;
 }
@@ -88,11 +89,6 @@ void test_sm9_sign_cmd(uint8_t data[],size_t datalen,char id[],size_t idlen){
 	//bn_to_bn(sign_master.ks,ks);
 	ep2_mul_gen(sign_master.Ppubs,sign_master.ks);
 
-	//ep2_copy(sign_master.Ppubs,Ppub);
-
-	// data = "Chinese IBS standard"
-		
-	// sm9_sign_master_key_generate(&sign_master);
 	sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_key);
 	sm9_sign_init(&ctx);
 	sm9_sign_update(&ctx,data, datalen);
@@ -103,6 +99,8 @@ void test_sm9_sign_cmd(uint8_t data[],size_t datalen,char id[],size_t idlen){
 	sm9_verify_update(&ctx, data, datalen);
 	if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
 	format_bytes(stdout, 0, 0, "signature", sig, siglen);
+	
+	//write_file(outfile,sig,siglen);
 	master_key_free(&sign_master);
 	user_key_free(&sign_key);
 
@@ -117,14 +115,16 @@ err:
 #include <getopt.h>
 
 void print_usage(char *program_name) {
-    printf("Usage: %s [-L plaintext_len] [-P plaintext] [-l id_len] [-i id]\n", program_name);
+    printf("Usage: %s [-L plaintext_len] [-P plaintext] [-l id_len] [-i id] [-F file.txt]\n", program_name);
     printf("Options:\n");
-	printf("  -L plaintext_len     Specify plaintext_len (int)\n");
-    printf("  -P plaintext         Specify plaintext (uint8_t[])\n");
-	printf("  -l idlen             Specify idlen (int)\n");
-    printf("  -i id                Specify id (uint8_t[])\n");
-    printf("  -h                   Print this help message\n");
-	printf("EXAMPLE: ./test_sm9_sign -L 20 -P \"Chinese IBS Standard\" -l 5 -i Alice");
+	printf("  -L plaintext_len       Specify plaintext_len (int)\n");
+    printf("  -P plaintext           Specify plaintext (uint8_t[])\n");
+	printf("  -l idlen               Specify idlen (int)\n");
+    printf("  -i id                  Specify id (uint8_t[])\n");
+	printf("  -F inputfile.txt       Specify inputfile (uint8_t[])\n");
+	printf("  -f outputfile.txt      Specify outputfile (uint8_t[])\n");
+    printf("  -h                     Print this help message\n");
+	printf("EXAMPLE: ./test_sm9_sign -L 20 -P \"Chinese IBS standard\" -l 5 -i \"Alice\" -f signature\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
     int idlen = 0;
     uint8_t *data;
     char *id;
+	//char *ofile = NULL;
 
     int opt;
     while ((opt = getopt(argc, argv, "P:i:L:l:h")) != -1) {
@@ -175,8 +176,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Do something with data and id
-		if (core_init() != RLC_OK) {
+	if (core_init() != RLC_OK) {
 		core_clean();
 		return 1;
 	}
@@ -186,11 +186,8 @@ int main(int argc, char *argv[]) {
 		core_clean();
 		return 0;
 	}
-	
-	//uint8_t data1[20] =  "Chinese IBS standard";
 
-	//test_sm9_sign_and_verify(data,sizeof(data),id,strlen(id));
-
+	//test_sm9_sign_and_ver();
 	test_sm9_sign_cmd(data,datalen,id,idlen);
 	core_clean();
 

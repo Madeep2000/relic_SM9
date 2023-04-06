@@ -1,7 +1,28 @@
+/*
+ * RELIC is an Efficient LIbrary for Cryptography
+ * Copyright (c) 2012 RELIC Authors
+ *
+ * This file is part of RELIC. RELIC is legal property of its developers,
+ * whose names are not listed here. Please refer to the COPYRIGHT file
+ * for contact information.
+ *
+ * RELIC is free software; you can redistribute it and/or modify it under the
+ * terms of the version 2.1 (or later) of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation. See the LICENSE files
+ * for more details.
+ *
+ * RELIC is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the LICENSE files for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public or the
+ * Apache License along with RELIC. If not, see <https://www.gnu.org/licenses/>
+ * or <https://www.apache.org/licenses/>.
+ */
+
 #include "sm9.h"
-
 #include "../test/debug.h"
-
 
 void sm9_init(){
 	// beta   = 0x6c648de5dc0a3f2cf55acc93ee0baf159f9d411806dc5177f5b21fd3da24d011
@@ -49,7 +70,24 @@ void sm9_clean(){
 	fp_free(SM9_ALPHA4);
 	fp_free(SM9_ALPHA5);
 }
- static void fp_to_bn(sm9_bn_t a, fp_t b){
+
+int write_file(char filename[],uint8_t output[],int output_size){
+
+	FILE *fp=fopen(filename,"w");
+	if(fp == NULL){
+		printf("FILE OPEN ERROR!");
+		return 0;
+	}
+	for(int i=0;i<output_size;i++){
+		fprintf(fp,"%x",output[i]);
+		printf("writing:%x ",output[i]);
+	}
+
+	return 1;
+
+}
+
+static void fp_to_bn(sm9_bn_t a, fp_t b){
 	uint8_t tmp_buff[32];
 	fp_write_bin(tmp_buff, 32, b);
 	uint32_t tmp32;
@@ -2745,7 +2783,7 @@ void sm9_pairing_faster(fp12_t r, const ep2_t Q, const ep_t P){
 	return ;
 }
 
-/*input:ep2 ep2 
+/*input:ep2 ep
 output:fp12
 */
 void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
@@ -4528,8 +4566,8 @@ int sm9_do_sign(const SM9_SIGN_KEY *key, const SM3_CTX *sm3_ctx, SM9_SIGNATURE *
 	g1_get_gen(SM9_P1);
 	g1_get_ord(ord);
 
-	//char rr = "00033C86 16B06704813203DFD00965022ED15975C662337AED648835DC4B1CBE";
-	sm9_bn_t rr = {0xDC4B1CBE,0xED648835,0xC662337A,0x2ED15975,0xD0096502,0x813203DF,0x16B06704,0x033C86};
+	char rr[] = "33C8616B06704813203DFD00965022ED15975C662337AED648835DC4B1CBE";
+	//sm9_bn_t rr = {0xDC4B1CBE,0xED648835,0xC662337A,0x2ED15975,0xD0096502,0x813203DF,0x16B06704,0x033C86};
 	// 测试pairing性能
 	// PERFORMANCE_TEST_NEW("pairing", sm9_pairing_fast(g, key->Ppubs, SM9_P1));
 
@@ -4542,7 +4580,7 @@ int sm9_do_sign(const SM9_SIGN_KEY *key, const SM3_CTX *sm3_ctx, SM9_SIGNATURE *
 		// 	return -1;
 		// }
 		//fp_rand(r);
-		bn_to_bn(r,rr);
+		bn_read_str(r,rr,strlen(rr),16);
 		// 测试使用
 		//sm9_fn_from_hex(r, "00033C8616B06704813203DFD00965022ED15975C662337AED648835DC4B1CBE"); // for testing
 
@@ -4796,7 +4834,6 @@ int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,
 		error_print();
 		return -1;
 	}
-	format_bytes(stdout, 0, 0, "verified signature", sig, siglen);
 
 	if ((ret = sm9_do_verify(mpk, id, idlen, &ctx->sm3_ctx, &signature)) < 0) {
 		error_print();
