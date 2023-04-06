@@ -79,8 +79,7 @@ int write_file(char filename[],uint8_t output[],int output_size){
 		return 0;
 	}
 	for(int i=0;i<output_size;i++){
-		fprintf(fp,"%x",output[i]);
-		printf("writing:%x ",output[i]);
+		fprintf(fp,"%02x",output[i]);
 	}
 
 	return 1;
@@ -4751,8 +4750,6 @@ int sm9_do_verify(const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen,
 	// B3: g = e(P1, Ppubs)
 
 	sm9_pairing_fastest(g, mpk->Ppubs, SM9_P1);
-	fp12_print(g);
-	printf("\nfirst pairing\n");
 	// B4: t = g^h
 	fp12_pow_t(t, g, sig->h);
 
@@ -4766,7 +4763,7 @@ int sm9_do_verify(const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen,
 
 	// B7: u = e(S, P)
 	sm9_pairing_fastest(u, P, sig->S);
-	fp12_print(u);
+
 
 	// B8: w = u * t
 	fp12_mul_t(w, u, t);
@@ -4785,9 +4782,7 @@ int sm9_do_verify(const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen,
 	sm3_update(&tmp_ctx, ct2, sizeof(ct2));
 	sm3_finish(&tmp_ctx, Ha + 32);
 	sm9_fn_from_hash(h2, Ha);
-	printf("h2:\n");
-	bn_print(h2);
-	printf("h2:\n");
+
 	if (bn_cmp(h2, sig->h) != 0) {
 		return 0;
 	}
@@ -4800,7 +4795,6 @@ int sm9_do_verify(const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen,
 	fp12_free(w);
 	ep_free(SM9_P1);
 	ep2_free(P);
-
 
 	return 1;
 }

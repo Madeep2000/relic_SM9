@@ -106,6 +106,55 @@ void test_sm9_sign_cmd(uint8_t data[],size_t datalen,char id[],size_t idlen){
 
 	return 1;
 err:
+	master_key_free(&sign_master);
+	user_key_free(&sign_key);
+	printf("%s test %d failed\n", __FUNCTION__, j);
+	error_print();
+	return -1;
+}
+
+void test_sm9_sign_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idlen,char outfile[]){
+
+	int j = 1;
+	SM9_SIGN_KEY sign_key;
+	SM9_SIGN_MASTER_KEY sign_master;
+
+	user_key_init(&sign_key);
+	master_key_init(&sign_master);
+
+	SM9_SIGN_CTX ctx;
+	//const char *id = "Alice";
+
+	uint8_t sig[104];
+	size_t siglen;
+
+	char ks[] = "130E78459D78545CB54C587E02CF480CE0B66340F319F348A1D5B1F2DC5F4";
+	
+	bn_read_str(sign_master.ks,ks,strlen(ks),16);
+
+	//sm9_bn_t ks = {0x1F2DC5F4,0x348A1D5B,0x340F319F,0x80CE0B66,0x87E02CF4,0x45CB54C5,0x8459D785,0x0130E7};
+	//bn_to_bn(sign_master.ks,ks);
+	ep2_mul_gen(sign_master.Ppubs,sign_master.ks);
+
+	sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_key);
+	sm9_sign_init(&ctx);
+	sm9_sign_update(&ctx,data, datalen);
+	sm9_sign_finish(&ctx, &sign_key, sig, &siglen);
+	format_bytes(stdout, 0, 0, "signature", sig, siglen);
+
+	sm9_verify_init(&ctx);
+	sm9_verify_update(&ctx, data, datalen);
+	if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
+	format_bytes(stdout, 0, 0, "\nsignature", sig, siglen);
+	
+	write_file(outfile,sig,siglen);
+	master_key_free(&sign_master);
+	user_key_free(&sign_key);
+
+	return 1;
+err:
+	master_key_free(&sign_master);
+	user_key_free(&sign_key);
 	printf("%s test %d failed\n", __FUNCTION__, j);
 	error_print();
 	return -1;
@@ -121,8 +170,7 @@ void print_usage(char *program_name) {
     printf("  -P plaintext           Specify plaintext (uint8_t[])\n");
 	printf("  -l idlen               Specify idlen (int)\n");
     printf("  -i id                  Specify id (uint8_t[])\n");
-	printf("  -F inputfile.txt       Specify inputfile (uint8_t[])\n");
-	printf("  -f outputfile.txt      Specify outputfile (uint8_t[])\n");
+	printf("  -f outputfile.txt      Specify outputfile (char[])\n");
     printf("  -h                     Print this help message\n");
 	printf("EXAMPLE: ./test_sm9_sign -L 20 -P \"Chinese IBS standard\" -l 5 -i \"Alice\" -f signature\n");
 }
@@ -132,10 +180,9 @@ int main(int argc, char *argv[]) {
     int idlen = 0;
     uint8_t *data;
     char *id;
-	//char *ofile = NULL;
-
+	char *ofile;
     int opt;
-    while ((opt = getopt(argc, argv, "P:i:L:l:h")) != -1) {
+    while ((opt = getopt(argc, argv, "P:i:L:l:F:f:h")) != -1) {
         switch (opt) {
             case 'P':
                 data = (uint8_t *)malloc((datalen) * sizeof(uint8_t));
@@ -161,6 +208,16 @@ int main(int argc, char *argv[]) {
             case 'l':
                 idlen = atoi(optarg);
                 break;
+			case 'F':
+                break;
+			case 'f':
+				ofile = (char *)malloc(strlen(optarg) * sizeof(char));
+				strcpy((char *)ofile, optarg);
+                if (ofile == NULL) {
+                    printf("Error: failed to allocate memory for plaintext.\n");
+                    return 1;
+                }
+                break;
             case 'h':
                 print_usage(argv[0]);
                 return 0;
@@ -169,7 +226,6 @@ int main(int argc, char *argv[]) {
                 return 1;
         }
     }
-
     if (datalen <= 0 || idlen <= 0) {
 		print_usage(argv[0]);
         printf("Error: datalen and idlen must be greater than 0.\n");
@@ -188,7 +244,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	//test_sm9_sign_and_ver();
-	test_sm9_sign_cmd(data,datalen,id,idlen);
+	//test_sm9_sign_cmd(data,datalen,id,idlen);
+	test_sm9_sign_cmdfile(data,datalen,id,idlen,ofile);
 	core_clean();
 
     free(data);
