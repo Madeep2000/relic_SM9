@@ -990,7 +990,7 @@ void test_other_pairing_new(){
 	//PERFORMANCE_TEST_NEW("pairing_fast", sm9_pairing_fast(r, Ppub, g1));
 	//PERFORMANCE_TEST_NEW("pairing_faster", sm9_pairing_faster(r, Ppub, g1));
 	PERFORMANCE_TEST_NEW("pairing_fastest", sm9_pairing_fastest(r, Ppub, g1));
-	fp12_print(r);
+	//fp12_print(r);
 	//PERFORMANCE_TEST_NEW("pairing_fastest2", sm9_pairing_fastest2(r, Ppub, g1));
 
 	PERFORMANCE_TEST_NEW("pp_map_tatep_k12(r, g1, Ppub)", pp_map_tatep_k12(r, g1, Ppub));

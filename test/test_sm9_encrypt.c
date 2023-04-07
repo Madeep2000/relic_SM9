@@ -44,7 +44,7 @@ int test_sm9_encrypt() {
 	size_t outlen = 0;
 	int j = 1;
 
-	uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x53, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
+	uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x45, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
 	uint8_t dec[20] = {0};
 	size_t declen = 20;
 	uint8_t IDB[3] = {0x42, 0x6F, 0x62};
@@ -205,9 +205,9 @@ void print_usage(char *program_name) {
 	printf("  -l idlen             Specify idlen (int)\n");
     printf("  -i id                Specify id (uint8_t[])\n");
     printf("  -h                   Print this help message\n");
-	printf("EXAMPLE: ./test_sm9_encrypt -L 20 -P \"Chinese IBS Standard\" -l 3 -i \"Bob\"");
+	printf("EXAMPLE: ./test_sm9_encrypt -L 20 -P \"Chinese IBE standard\" -l 3 -i \"Bob\"");
 }
-
+/*
 int main(int argc, char *argv[]) {
     int datalen = 0;
     int idlen = 0;
@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 	
-	//uint8_t data1[20] =  "Chinese IBS standard";
+	//uint8_t data1[20] =  "Chinese IBE standard";
 
 	//test_sm9_sign_and_verify(data,sizeof(data),id,strlen(id));
 
@@ -280,8 +280,8 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+*/
 
-/*
 int main(){
     if (core_init() != RLC_OK) {
 		core_clean();
@@ -299,4 +299,3 @@ int main(){
     core_clean();
     return 0;
 }
-*/

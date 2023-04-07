@@ -51,7 +51,7 @@ void test_sm9_sign_and_ver(){
 	sm9_verify_init(&ctx);
 	sm9_verify_update(&ctx, data, datalen);
 	if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
-	format_bytes(stdout, 0, 0, "signature", sig, siglen);
+	format_bytes(stdout, 0, 0, "\nverified signature", sig, siglen);
 	//write_file("output.txt",sig,siglen);
 
 	master_key_free(&sign_master);
@@ -176,7 +176,7 @@ void print_usage(char *program_name) {
 }
 
 int main(int argc, char *argv[]) {
-    int datalen = 0;
+    /*int datalen = 0;
     int idlen = 0;
     uint8_t *data;
     char *id;
@@ -231,6 +231,7 @@ int main(int argc, char *argv[]) {
         printf("Error: datalen and idlen must be greater than 0.\n");
         return 1;
     }
+	*/
 
 	if (core_init() != RLC_OK) {
 		core_clean();
@@ -243,13 +244,13 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	//test_sm9_sign_and_ver();
+	test_sm9_sign_and_ver();
 	//test_sm9_sign_cmd(data,datalen,id,idlen);
-	test_sm9_sign_cmdfile(data,datalen,id,idlen,ofile);
+	//test_sm9_sign_cmdfile(data,datalen,id,idlen,ofile);
 	core_clean();
 
-    free(data);
-    free(id);
+    //free(data);
+    //free(id);
 
     return 0;
 }

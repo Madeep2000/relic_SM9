@@ -2220,7 +2220,6 @@ static void pp_pow_bn_t(fp12_t c, fp12_t a) {
 		fp_prime_get_par(x);                
 		b = fp_prime_get_par_sps(&l);       
 
-
 		fp12_conv_cyc_t(c, a);
 
 		fp12_inv_cyc_t(y0,c);
@@ -4658,6 +4657,7 @@ sm9_sign_finish(SM9_SIGN_CTX *ctx, const SM9_SIGN_KEY *key, uint8_t *sig, size_t
 		return -1;
 	}
 	*siglen = 0;
+
 	// SM9_SIGNATURE 转成 字节数组
 	if (sm9_signature_to_der(&signature, &sig, siglen) != 1) {
 		error_print();
@@ -4833,7 +4833,8 @@ int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,
 		error_print();
 		return -1;
 	}
-
+	printf("\nsignature.h2 is :\n");
+	bn_print(signature.h);
 	bn_free(signature.h);
 	ep_free(signature.S);
 	return ret;
