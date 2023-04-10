@@ -70,6 +70,50 @@ void sm9_clean(){
 	fp_free(SM9_ALPHA4);
 	fp_free(SM9_ALPHA5);
 }
+/*
+int read_file(char filename[],uint8_t output[],size_t output_size){
+
+	uint8_t buffer[100];
+	FILE *fp=fopen(filename,"r");
+	if(fp == NULL){
+		printf("FILE OPEN ERROR!");
+		return 0;
+	}
+    output_size = fread(buffer, sizeof(uint8_t), 100, fp);
+	printf("实际读取了 %zu 个字节\n", output_size);
+
+	output = (uint8_t *)malloc((output_size) * sizeof(uint8_t));
+	memcpy((uint8_t *)output,buffer,output_size);
+    if (output == NULL) {
+        printf("Error: failed to allocate memory for plaintext.\n");
+        return 1;
+    }
+
+	return 1;
+}
+*/
+int read_file(char filename[], uint8_t **output, size_t *output_size) {
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("FILE OPEN ERROR\n");
+        return 0;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    *output_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    *output = (uint8_t *)malloc(*output_size * sizeof(uint8_t));
+    if (*output == NULL) {
+        printf("Error: failed to allocate memory\n");
+        fclose(fp);
+        return 0;
+    }
+
+    fread(*output, sizeof(uint8_t), *output_size, fp);
+    fclose(fp);
+    return 1;
+}
 
 int write_file(char filename[],uint8_t output[],int output_size){
 
@@ -81,7 +125,7 @@ int write_file(char filename[],uint8_t output[],int output_size){
 	for(int i=0;i<output_size;i++){
 		fprintf(fp,"%02x",output[i]);
 	}
-
+ 	fclose(fp);
 	return 1;
 
 }

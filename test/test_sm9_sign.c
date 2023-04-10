@@ -164,13 +164,13 @@ err:
 #include <getopt.h>
 
 void print_usage(char *program_name) {
-    printf("Usage: %s [-L plaintext_len] [-P plaintext] [-l id_len] [-i id] [-F file.txt]\n", program_name);
+    printf("Usage: %s [-L plaintext_len] [-P plaintext] [-l id_len] [-i id] [-F infile.txt] [-f outfile.txt]\n", program_name);
     printf("Options:\n");
 	printf("  -L plaintext_len       Specify plaintext_len (int)\n");
     printf("  -P plaintext           Specify plaintext (uint8_t[])\n");
 	printf("  -l idlen               Specify idlen (int)\n");
     printf("  -i id                  Specify id (uint8_t[])\n");
-	printf("  -f outputfile.txt      Specify outputfile (char[])\n");
+	printf("  -f outfile.txt         Specify outputfile (char[])\n");
     printf("  -h                     Print this help message\n");
 	printf("EXAMPLE: ./test_sm9_sign -L 20 -P \"Chinese IBS standard\" -l 5 -i \"Alice\" -f signature\n");
 }
