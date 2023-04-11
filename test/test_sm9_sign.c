@@ -145,7 +145,7 @@ void test_sm9_sign_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idlen,
 	sm9_verify_init(&ctx);
 	sm9_verify_update(&ctx, data, datalen);
 	if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
-	format_bytes(stdout, 0, 0, "\nsignature", sig, siglen);
+	format_bytes(stdout, 0, 0, "\nverified signature", sig, siglen);
 	
 	write_file(outfile,sig,siglen);
 	master_key_free(&sign_master);

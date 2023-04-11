@@ -41,7 +41,6 @@ typedef struct {
 	ep_t S;
 } SM9_SIGNATURE;
 
-
 typedef struct {
 	ep_t ds;
 	ep2_t Ppubs;
@@ -84,7 +83,7 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P);
 // 运行arr_size次配对算法，使用threads_num个线程运行
 void sm9_pairing_omp(fp12_t r_arr[], const ep2_t Q_arr[], const ep_t P_arr[], const size_t arr_size, const size_t threads_num);
 
-// sm9 签名
+// sm9 signature
 int sm9_sign_init(SM9_SIGN_CTX *ctx);
 int sm9_sign_update(SM9_SIGN_CTX *ctx, const uint8_t *data, size_t datalen);
 int sm9_sign_finish(SM9_SIGN_CTX *ctx, const SM9_SIGN_KEY *key, uint8_t *sig, size_t *siglen);
@@ -92,5 +91,7 @@ int sm9_do_sign(const SM9_SIGN_KEY *key, const SM3_CTX *sm3_ctx, SM9_SIGNATURE *
 int sm9_verify_init(SM9_SIGN_CTX *ctx);
 int sm9_verify_update(SM9_SIGN_CTX *ctx, const uint8_t *data, size_t datalen);
 int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,	const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen);
+
+//sm9 crypto
 
 #endif

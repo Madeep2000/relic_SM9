@@ -70,30 +70,9 @@ void sm9_clean(){
 	fp_free(SM9_ALPHA4);
 	fp_free(SM9_ALPHA5);
 }
-/*
-int read_file(char filename[],uint8_t output[],size_t output_size){
 
-	uint8_t buffer[100];
-	FILE *fp=fopen(filename,"r");
-	if(fp == NULL){
-		printf("FILE OPEN ERROR!");
-		return 0;
-	}
-    output_size = fread(buffer, sizeof(uint8_t), 100, fp);
-	printf("实际读取了 %zu 个字节\n", output_size);
-
-	output = (uint8_t *)malloc((output_size) * sizeof(uint8_t));
-	memcpy((uint8_t *)output,buffer,output_size);
-    if (output == NULL) {
-        printf("Error: failed to allocate memory for plaintext.\n");
-        return 1;
-    }
-
-	return 1;
-}
-*/
 int read_file(char filename[], uint8_t **output, size_t *output_size) {
-    FILE *fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
         printf("FILE OPEN ERROR\n");
         return 0;
@@ -115,16 +94,15 @@ int read_file(char filename[], uint8_t **output, size_t *output_size) {
     return 1;
 }
 
+
 int write_file(char filename[],uint8_t output[],int output_size){
 
-	FILE *fp=fopen(filename,"w");
+	FILE *fp=fopen(filename,"wb");
 	if(fp == NULL){
 		printf("FILE OPEN ERROR!");
 		return 0;
 	}
-	for(int i=0;i<output_size;i++){
-		fprintf(fp,"%02x",output[i]);
-	}
+	fwrite(output,sizeof(uint8_t),output_size,fp);
  	fclose(fp);
 	return 1;
 
@@ -265,7 +243,7 @@ void user_key_free(SM9_SIGN_KEY key){
 	ep2_free(key.Ppubs);
 	return;
 }
-
+/*
 void enc_master_key_init(SM9_ENC_MASTER_KEY key){
 	ep_null(key.Ppube);
 	ep_new(key.Ppube);
@@ -273,7 +251,7 @@ void enc_master_key_init(SM9_ENC_MASTER_KEY key){
 	bn_new(key.ke);
 	return;
 }
-
+*/
 void enc_master_key_free(SM9_ENC_MASTER_KEY key){
 	ep_free(key.Ppube);
 	bn_free(key.ke);
@@ -293,6 +271,41 @@ void enc_user_key_free(SM9_ENC_KEY key){
 	ep2_free(key.de);
 	return;
 }
+
+//default ke
+void enc_master_key_init(SM9_ENC_MASTER_KEY *tem){
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
+	bn_read_str(tem->ke,ke,strlen(ke),16);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
+//read ke
+void enc_master_key_set(SM9_ENC_MASTER_KEY *tem,char ke[]){
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	bn_read_str(tem->ke,ke,strlen(ke),16);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
+// rand ke
+void enc_master_key_gen(SM9_ENC_MASTER_KEY *tem){
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	bn_rand(tem->ke,RLC_POS,256);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
 
 // a*k = (a1, a2)*k = (a1*k, a2*k)
 static void fp2_mul_fp(fp2_t r, const fp2_t a, const fp_t k)
@@ -617,7 +630,9 @@ void fp12_mul_t(fp12_t c, fp12_t a, fp12_t b) {
 }
 
 
-// g is a sparse fp12_t, g = g0 + g2'w^2, g0 = g0' + g3'w^3，g0',g1',g3'都定义在fp2
+/* g is a sparse fp12_t, g = g0 + g2'w^2, g0 = g0' + g3'w^3，g0',g1',g3' all defined in fp2
+Multiplicative twist curve
+*/
 void fp12_mul_sparse(fp12_t h, const fp12_t f, const fp12_t g){
 	fp4_t t0, t1, u0, u1, u2, t, h0, h1, h2;
 
