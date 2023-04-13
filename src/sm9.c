@@ -71,6 +71,7 @@ void sm9_clean(){
 	fp_free(SM9_ALPHA5);
 }
 
+//把filename文件的内容读到output里面
 int read_file(char filename[], uint8_t **output, size_t *output_size) {
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
@@ -94,7 +95,7 @@ int read_file(char filename[], uint8_t **output, size_t *output_size) {
     return 1;
 }
 
-
+//把output的内容写到filename文件里面
 int write_file(char filename[],uint8_t output[],int output_size){
 
 	FILE *fp=fopen(filename,"wb");
@@ -106,6 +107,122 @@ int write_file(char filename[],uint8_t output[],int output_size){
  	fclose(fp);
 	return 1;
 
+}
+
+//default ks
+void sign_master_key_init(SM9_SIGN_MASTER_KEY *key){
+	bn_null(key->ks);
+	bn_new(key->ks);
+	ep2_null(key->Ppubs);
+	ep2_new(key->Ppubs);
+	char ks[] = "130E78459D78545CB54C587E02CF480CE0B66340F319F348A1D5B1F2DC5F4";
+	bn_read_str(key->ks,ks,strlen(ks),16);
+	ep2_mul_gen(key->Ppubs,key->ks);
+	return;
+}
+
+
+//read ks 
+void sign_master_key_set(SM9_SIGN_MASTER_KEY *key,uint8_t ks[],int kslen){
+	//print_bytes(ks,strlen(ks));
+	bn_null(key->ks);
+	bn_new(key->ks);
+	ep2_null(key->Ppubs);
+	ep2_new(key->Ppubs);
+
+	bn_read_bin(key->ks,ks,kslen);
+	ep2_mul_gen(key->Ppubs,key->ks);
+	bn_print(key->ks);
+
+	return;
+}
+
+
+//random ks
+void sign_master_key_gen(SM9_SIGN_MASTER_KEY *key){
+	bn_null(key->ks);
+	bn_new(key->ks);
+	ep2_null(key->Ppubs);
+	ep2_new(key->Ppubs);
+
+	bn_rand(key->ks,RLC_POS,256);
+	ep2_mul_gen(key->Ppubs,key->ks);
+	return;
+
+}
+
+void sign_master_key_free(SM9_SIGN_MASTER_KEY *key){
+	bn_free(key->ks);
+	ep2_free(key->Ppubs);
+	return;
+}
+
+void sign_user_key_init(SM9_SIGN_KEY *key){
+	ep_null(key->ds);
+	ep_new(key->ds);
+	ep2_null(key->Ppubs);
+	ep2_new(key->Ppubs);
+	return;
+}
+
+void sign_user_key_free(SM9_SIGN_KEY *key){
+	ep_free(key->ds);
+	ep2_free(key->Ppubs);
+	return;
+}
+
+
+void enc_user_key_init(SM9_ENC_KEY *key){
+	ep_null(key->Ppube);
+	ep2_null(key->de);
+	ep_new(key->Ppube);
+	ep2_new(key->de);
+	return;
+}
+
+void enc_user_key_free(SM9_ENC_KEY *key){
+	ep_free(key->Ppube);
+	ep2_free(key->de);
+	return;
+}
+
+//default ke
+void enc_master_key_init(SM9_ENC_MASTER_KEY *tem){
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
+	bn_read_str(tem->ke,ke,strlen(ke),16);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
+//read ke
+void enc_master_key_set(SM9_ENC_MASTER_KEY *tem,uint8_t ke[],int kelen){
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	bn_read_bin(tem->ke,ke,kelen);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
+// random ke
+void enc_master_key_gen(SM9_ENC_MASTER_KEY *tem){
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	bn_rand(tem->ke,RLC_POS,256);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
+void enc_master_key_free(SM9_ENC_MASTER_KEY *tem){
+	bn_free(tem->ke);
+	ep_free(tem->Ppube);
 }
 
 static void fp_to_bn(sm9_bn_t a, fp_t b){
@@ -215,97 +332,6 @@ static size_t bn_to_bits(const sm9_bn_t a, char bits[256])
 	// printf("highest_bit_index = %d\n", highest_bit_index);
 	// return highest_bit_index;
 }
-
-void master_key_init(SM9_SIGN_MASTER_KEY *key){
-	bn_null(key->ks);
-	bn_new(key->ks);
-	ep2_null(key->Ppubs);
-	ep2_new(key->Ppubs);
-	return;
-}
-
-void master_key_free(SM9_SIGN_MASTER_KEY key){
-	bn_free(key->ks);
-	ep2_free(key->Ppubs);
-	return;
-}
-
-void user_key_init(SM9_SIGN_KEY key){
-	ep_null(key->ds);
-	ep_new(key->ds);
-	ep2_null(key->Ppubs);
-	ep2_new(key->Ppubs);
-	return;
-}
-
-void user_key_free(SM9_SIGN_KEY key){
-	ep_free(key.ds);
-	ep2_free(key.Ppubs);
-	return;
-}
-/*
-void enc_master_key_init(SM9_ENC_MASTER_KEY key){
-	ep_null(key.Ppube);
-	ep_new(key.Ppube);
-	bn_null(key.ke);
-	bn_new(key.ke);
-	return;
-}
-*/
-void enc_master_key_free(SM9_ENC_MASTER_KEY key){
-	ep_free(key.Ppube);
-	bn_free(key.ke);
-	return;
-}
-
-void enc_user_key_init(SM9_ENC_KEY key){
-	ep_null(key.Ppube);
-	ep2_null(key.de);
-	ep_new(key.Ppube);
-	ep2_new(key.de);
-	return;
-}
-
-void enc_user_key_free(SM9_ENC_KEY key){
-	ep_free(key.Ppube);
-	ep2_free(key.de);
-	return;
-}
-
-//default ke
-void enc_master_key_init(SM9_ENC_MASTER_KEY *tem){
-	bn_null(tem->ke);
-	bn_new(tem->ke);
-	ep_null(tem->Ppube);
-	ep_new(tem->Ppube);
-	char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
-	bn_read_str(tem->ke,ke,strlen(ke),16);
-	ep_mul_gen(tem->Ppube,tem->ke);
-	return;
-}
-
-//read ke
-void enc_master_key_set(SM9_ENC_MASTER_KEY *tem,char ke[]){
-	bn_null(tem->ke);
-	bn_new(tem->ke);
-	ep_null(tem->Ppube);
-	ep_new(tem->Ppube);
-	bn_read_str(tem->ke,ke,strlen(ke),16);
-	ep_mul_gen(tem->Ppube,tem->ke);
-	return;
-}
-
-// rand ke
-void enc_master_key_gen(SM9_ENC_MASTER_KEY *tem){
-	bn_null(tem->ke);
-	bn_new(tem->ke);
-	ep_null(tem->Ppube);
-	ep_new(tem->Ppube);
-	bn_rand(tem->ke,RLC_POS,256);
-	ep_mul_gen(tem->Ppube,tem->ke);
-	return;
-}
-
 
 // a*k = (a1, a2)*k = (a1*k, a2*k)
 static void fp2_mul_fp(fp2_t r, const fp2_t a, const fp_t k)
@@ -678,6 +704,7 @@ void fp12_mul_sparse2(fp12_t r, fp12_t a, fp12_t b){
 	fp4_mul_fp2_v(r[1][1], a[1][1], b[0][1]);
 }
 
+// as same as conjugate in Fp12
 void fp12_inv_cyc_t(fp12_t c, fp12_t a) {
 	fp2_copy(c[0][0],a[0][0]);
 	fp2_copy(c[1][1],a[1][1]);

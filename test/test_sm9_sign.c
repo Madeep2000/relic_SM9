@@ -6,7 +6,28 @@
  *
  *  http://www.apache.org/licenses/LICENSE-2.0
  */
-
+/*
+ * RELIC is an Efficient LIbrary for Cryptography
+ * Copyright (c) 2009 RELIC Authors
+ *
+ * This file is part of RELIC. RELIC is legal property of its developers,
+ * whose names are not listed here. Please refer to the COPYRIGHT file
+ * for contact information.
+ *
+ * RELIC is free software; you can redistribute it and/or modify it under the
+ * terms of the version 2.1 (or later) of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation. See the LICENSE files
+ * for more details.
+ *
+ * RELIC is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the LICENSE files for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public or the
+ * Apache License along with RELIC. If not, see <https://www.gnu.org/licenses/>
+ * or <https://www.apache.org/licenses/>.
+ */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,18 +50,14 @@ void test_sm9_sign_and_ver(){
 	SM9_SIGN_KEY sign_key;
 	SM9_SIGN_MASTER_KEY sign_master;
 
-	user_key_init(&sign_key);
-	master_key_init(&sign_master);
+	sign_user_key_init(&sign_key);
+	sign_master_key_init(&sign_master);
 
 	SM9_SIGN_CTX ctx;
 	//const char *id = "Alice";
 
 	uint8_t sig[104];
 	size_t siglen;
-
-	char ks[] = "130E78459D78545CB54C587E02CF480CE0B66340F319F348A1D5B1F2DC5F4";
-	bn_read_str(sign_master.ks,ks,strlen(ks),16);
-	ep2_mul_gen(sign_master.Ppubs,sign_master.ks);
 		
 	sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_key);
 	sm9_sign_init(&ctx);
@@ -54,14 +71,14 @@ void test_sm9_sign_and_ver(){
 	format_bytes(stdout, 0, 0, "\nverified signature", sig, siglen);
 	//write_file("output.txt",sig,siglen);
 
-	master_key_free(&sign_master);
-	user_key_free(&sign_key);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
 
 	return 1;
 err:
 	printf("%s test %d failed\n", __FUNCTION__, j);
-	master_key_free(&sign_master);
-	user_key_free(&sign_key);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
 	error_print();
 	return -1;
 }
@@ -72,8 +89,8 @@ void test_sm9_sign_cmd(uint8_t data[],size_t datalen,char id[],size_t idlen){
 	SM9_SIGN_KEY sign_key;
 	SM9_SIGN_MASTER_KEY sign_master;
 
-	user_key_init(&sign_key);
-	master_key_init(&sign_master);
+	sign_user_key_init(&sign_key);
+	sign_master_key_init(&sign_master);
 
 	SM9_SIGN_CTX ctx;
 	//const char *id = "Alice";
@@ -101,13 +118,13 @@ void test_sm9_sign_cmd(uint8_t data[],size_t datalen,char id[],size_t idlen){
 	format_bytes(stdout, 0, 0, "signature", sig, siglen);
 	
 	//write_file(outfile,sig,siglen);
-	master_key_free(&sign_master);
-	user_key_free(&sign_key);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
 
 	return 1;
 err:
-	master_key_free(&sign_master);
-	user_key_free(&sign_key);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
 	printf("%s test %d failed\n", __FUNCTION__, j);
 	error_print();
 	return -1;
@@ -118,27 +135,18 @@ void test_sm9_sign_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idlen,
 	int j = 1;
 	SM9_SIGN_KEY sign_key;
 	SM9_SIGN_MASTER_KEY sign_master;
-
-	user_key_init(&sign_key);
-	master_key_init(&sign_master);
-
 	SM9_SIGN_CTX ctx;
 	//const char *id = "Alice";
-
+	//uint8_t data[] = "Chinese IBS standard"
 	uint8_t sig[104];
 	size_t siglen;
 
-	char ks[] = "130E78459D78545CB54C587E02CF480CE0B66340F319F348A1D5B1F2DC5F4";
-	
-	bn_read_str(sign_master.ks,ks,strlen(ks),16);
-
-	//sm9_bn_t ks = {0x1F2DC5F4,0x348A1D5B,0x340F319F,0x80CE0B66,0x87E02CF4,0x45CB54C5,0x8459D785,0x0130E7};
-	//bn_to_bn(sign_master.ks,ks);
-	ep2_mul_gen(sign_master.Ppubs,sign_master.ks);
-
+	sign_user_key_init(&sign_key);
+	sign_master_key_init(&sign_master);
 	sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_key);
 	sm9_sign_init(&ctx);
 	sm9_sign_update(&ctx,data, datalen);
+	
 	sm9_sign_finish(&ctx, &sign_key, sig, &siglen);
 	format_bytes(stdout, 0, 0, "signature", sig, siglen);
 
@@ -148,13 +156,13 @@ void test_sm9_sign_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idlen,
 	format_bytes(stdout, 0, 0, "\nverified signature", sig, siglen);
 	
 	write_file(outfile,sig,siglen);
-	master_key_free(&sign_master);
-	user_key_free(&sign_key);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
 
 	return 1;
 err:
-	master_key_free(&sign_master);
-	user_key_free(&sign_key);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
 	printf("%s test %d failed\n", __FUNCTION__, j);
 	error_print();
 	return -1;

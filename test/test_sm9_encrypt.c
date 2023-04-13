@@ -6,7 +6,28 @@
  *
  *  http://www.apache.org/licenses/LICENSE-2.0
  */
-
+/*
+ * RELIC is an Efficient LIbrary for Cryptography
+ * Copyright (c) 2009 RELIC Authors
+ *
+ * This file is part of RELIC. RELIC is legal property of its developers,
+ * whose names are not listed here. Please refer to the COPYRIGHT file
+ * for contact information.
+ *
+ * RELIC is free software; you can redistribute it and/or modify it under the
+ * terms of the version 2.1 (or later) of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation. See the LICENSE files
+ * for more details.
+ *
+ * RELIC is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the LICENSE files for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public or the
+ * Apache License along with RELIC. If not, see <https://www.gnu.org/licenses/>
+ * or <https://www.apache.org/licenses/>.
+ */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -53,7 +74,6 @@ int test_sm9_encrypt() {
 	if (memcmp(data, dec, sizeof(data)) != 0) goto err; ++j;
 	format_bytes(stdout, 0, 0, "plaintext", dec, declen);
 	printf("%s() ok\n", __FUNCTION__);
-    ep2_free(de);
 	
 	ep_free(msk.Ppube);
 	bn_free(msk.ke);
@@ -64,7 +84,6 @@ int test_sm9_encrypt() {
 
 	return 1;
 err:
-    ep2_free(de);
 	ep_free(msk.Ppube);
 	bn_free(msk.ke);
 	ep_free(enc_key.Ppube);
@@ -179,16 +198,14 @@ int test_sm9_encrypt_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idle
 	int j = 1;
 
 	//uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x53, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
+	
 	uint8_t dec[20] = {0};
 	size_t declen = 20;
 	//uint8_t IDB[3] = {0x42, 0x6F, 0x62};
+	
 	enc_master_key_init(&msk);
 
 	if (sm9_enc_master_key_extract_key(&msk, (char *)id, idlen, &enc_key) < 0) goto err; ++j;
-
-    //sm9_twist_point_from_hex(&de, hex_de);
-    
-    //if (ep2_cmp(enc_key.de,de)) goto err; ++j;
 
 	if (sm9_encrypt(&msk, (char *)id, idlen, data, datalen, out, &outlen) < 0) goto err; ++j;
 	format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
@@ -196,7 +213,7 @@ int test_sm9_encrypt_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idle
     if (sm9_decrypt(&enc_key, (char *)id, idlen, out, outlen, dec, &declen) < 0) goto err; ++j;
 	if (memcmp(data, dec, sizeof(data)) != 0) goto err; ++j;
 	format_bytes(stdout, 0, 0, "plaintext", dec, declen);
-	write_file("plaintext",dec,declen);
+	//write_file("plaintext",dec,declen);
 	printf("%s() ok\n", __FUNCTION__);
     ep2_free(de);
 	
@@ -209,7 +226,6 @@ int test_sm9_encrypt_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idle
 
 	return 1;
 err:
-    ep2_free(de);
 	ep_free(msk.Ppube);
 	bn_free(msk.ke);
 	ep_free(enc_key.Ppube);
@@ -232,14 +248,14 @@ void print_usage(char *program_name) {
     printf("  -P plaintext         Specify plaintext (uint8_t[])\n");
 	printf("  -l idlen             Specify length of id (int)\n");
     printf("  -i id                Specify id (uint8_t[])\n");
-	printf("  -F infile.txt        Specify inputfile (char[])\n");
-	printf("  -f outfile.txt       Specify outputfile (char[])\n");
+	printf("  -F infile.txt        Specify inputfile as plaintext(char[])\n");
+	printf("  -f outfile.txt       Specify outputfile as ciphertext(char[])\n");
     printf("  -h                   Print this help message\n");
 	printf("EXAMPLE1: ./test_sm9_encrypt -L 20 -P \"Chinese IBE standard\" -l 3 -i \"Bob\" -f ciphertext.txt\n");
 	printf("EXAMPLE2: ./test_sm9_encrypt -F plaintext.txt -l 3 -i \"Bob\" -f ciphertext.txt\n");
 }
 
-/*
+
 int main(int argc, char *argv[]) {
     size_t datalen = 0;
     int idlen = 0;
@@ -308,8 +324,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Do something with data and id
-		if (core_init() != RLC_OK) {
+	if (core_init() != RLC_OK) {
 		core_clean();
 		return 1;
 	}
@@ -334,8 +349,8 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-*/
 
+/*
 int main(){
     if (core_init() != RLC_OK) {
 		core_clean();
@@ -353,3 +368,4 @@ int main(){
     core_clean();
     return 0;
 }
+*/
