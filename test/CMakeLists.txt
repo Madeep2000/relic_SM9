@@ -96,6 +96,11 @@ ADD_MODULE(sm9_encrypt)
 # 添加sm9 服务器测试模块
 ADD_MODULE(sm9_server)
 
+# 添加sm9 客户端测试模块
+ADD_MODULE(sm9_client)
+
+ADD_MODULE(sm9_kem)
+
 ADD_MODULE(rand)
 ADD_MODULE(core)
 # set (CMAKE_C_FLAGS " -O3 ${CMAKE_C_FLAGS}")

@@ -121,6 +121,27 @@ void performance_compare_num(const fp12_t a,const fp12_t b){
     d = Time_F(STOP);
     printf("fp12_mul_sparse : run %d times in %.2fs\n", count, d);
 
+	// fp12_mul_sparse_t
+    alarm(sec);
+    run = 1;
+    Time_F(START);
+    for (count = 0; run && count < 0x7fffffff; count++)
+    {
+        fp12_mul_sparse_t(r, a, b);
+    }
+    d = Time_F(STOP);
+    printf("fp12_mul_sparse_t : run %d times in %.2fs\n", count, d);
+
+    alarm(sec);
+    run = 1;
+    Time_F(START);
+    for (count = 0; run && count < 0x7fffffff; count++)
+    {
+        fp12_mul_dxs_t(r, a, b);
+    }
+    d = Time_F(STOP);
+    printf("fp12_mul_dxs_t : run %d times in %.2fs\n", count, d);
+
     return ;
 
 }
@@ -762,7 +783,7 @@ void test_a_lot(){
 	printf("--------Mul Sparse Correctness Test--------\n");
 	fp12_mul_t1(temp,f_num,g_num);
 	fp12_mul_t(r, f_num, g_num);
-	fp12_mul_sparse(t, f_num, g_num);  
+	fp12_mul_dxs(t, f_num, g_num);  
 	
 	if( fp12_cmp(temp,r) == 0 && fp12_cmp(r, t) == 0 ){
 		printf("Mul Spares equa\n");
@@ -1069,8 +1090,8 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 	// test_other_pairing();
-	test_other_pairing_new();
-	//test_a_lot();
+	//test_other_pairing_new();
+	test_a_lot();
 	// test_miller();
 	//test_ep_add();
 	//test_sm9_sign_and_verify();

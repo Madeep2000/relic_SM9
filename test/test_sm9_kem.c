@@ -39,53 +39,42 @@
 #include <unistd.h>
 #include <signal.h>
 
-int test_sm9_encrypt() {
+int test_sm9_kdm() {
 	SM9_ENC_MASTER_KEY msk;
 	SM9_ENC_KEY enc_key;
 
     //enc_master_key_init(&msk);
     //enc_user_key_init(&enc_key);
 	
-
 	ep_null(enc_key.Ppube);
 	ep_new(enc_key.Ppube);
 	ep2_null(enc_key.de);
 	ep2_new(enc_key.de);
 
+	ep_t C;
+	ep_null(C);
+	ep_new(C);
+
     uint8_t out[1000] = {0};
 	size_t outlen = 0;
 	int j = 1;
-
-	//Chinese IBE standard
-	uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x45, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
-	uint8_t dec[20] = {0};
-	uint8_t test[65];
-	uint8_t temp[129];
-	size_t declen = 20;
-
+	uint8_t kbuf[287];
+	size_t klen = 32;
 	//Bob
 	uint8_t IDB[3] = {0x42, 0x6F, 0x62};
 
+	uint8_t testbuf[128];
+	int tlen = 128;
+
 	enc_master_key_init(&msk);
-	printf("af %d \n",ep_size_bin(msk.Ppube,0));
-	ep_write_bin(test,65,msk.Ppube,0);
-	format_bytes(stdout, 0, 0, "masterpub", test, 65);
-	write_file("masterpub",test,65);
 
 	if (sm9_enc_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &enc_key) < 0) goto err; ++j;
-	
-	int l = ep2_size_bin(enc_key.de,0);
-	printf("af %d \n",ep2_size_bin(enc_key.de,0));
-	ep2_print(enc_key.de);
-	ep2_write_bin(temp,l,enc_key.de,0);
-	format_bytes(stdout, 0, 0, "prikey", temp, l);
-	write_file("prikey",temp,l);
 
-	if (sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) < 0) goto err; ++j;
-	format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
-    if (sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) < 0) goto err; ++j;
-	if (memcmp(data, dec, sizeof(data)) != 0) goto err; ++j;
-	format_bytes(stdout, 0, 0, "plaintext", dec, declen);
+
+	sm9_kem_encrypt(&msk, (char *)IDB, sizeof(IDB), klen, kbuf, C);
+
+	sm9_kem_decrypt(&enc_key,(char *)IDB, sizeof(IDB),C,klen,kbuf);
+
 	printf("%s() ok\n", __FUNCTION__);
 	
 	ep_free(msk.Ppube);
@@ -376,7 +365,7 @@ int main(){
 		return 0;
 	}
 
-    test_sm9_encrypt();
+    test_sm9_kdm();
 
     core_clean();
     return 0;

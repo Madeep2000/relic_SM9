@@ -24,6 +24,13 @@
 #include "sm9.h"
 #include "../test/debug.h"
 
+// for H1() and H2()
+// h = (Ha mod (n-1)) + 1;  h in [1, n-1], n is the curve order, Ha is 40 bytes from hash
+static const sm9_bn_t SM9_ONE = {1,0,0,0,0,0,0,0};
+static const sm9_barrett_bn_t SM9_MU_N_MINUS_ONE = {0xdfc97c31, 0x74df4fd4, 0xc9c073b0, 0x9c95d85e, 0xdcd1312c, 0x55f73aeb, 0xeb5759a6, 0x67980e0b, 0x00000001};
+static const sm9_bn_t SM9_N_MINUS_ONE = {0xd69ecf24, 0xe56ee19c, 0x18ea8bee, 0x49f2934b, 0xf58ec744, 0xd603ab4f, 0x02a3a6f1, 0xb6400000};
+
+
 void sm9_init(){
 	// beta   = 0x6c648de5dc0a3f2cf55acc93ee0baf159f9d411806dc5177f5b21fd3da24d011
 	// alpha1 = 0x3f23ea58e5720bdb843c6cfa9c08674947c5c86e0ddd04eda91d8354377b698b
@@ -656,8 +663,8 @@ void fp12_mul_t(fp12_t c, fp12_t a, fp12_t b) {
 }
 
 
-/* g is a sparse fp12_t, g = g0 + g2'w^2, g0 = g0' + g3'w^3，g0',g1',g3' all defined in fp2
-Multiplicative twist curve
+/* f is normal fp12_t ,g is a sparse fp12_t, g = g0 + g2'w^2, g0 = g0' + g3'w^3，g0',g1',g3' all defined in fp2
+Multiplicative twist curve 乘扭曲线下的稀疏乘法
 */
 void fp12_mul_sparse(fp12_t h, const fp12_t f, const fp12_t g){
 	fp4_t t0, t1, u0, u1, u2, t, h0, h1, h2;
@@ -696,6 +703,133 @@ void fp12_mul_sparse(fp12_t h, const fp12_t f, const fp12_t g){
 	fp4_sub(h[1][1], u1, t0);
 	fp4_sub(h[1][1], h[1][1], t1);
 }
+
+//f is normal fp12_t ,g is a sparse fp12_t, g = g0 + g2'w^2, g0 = g0' + g3'w^3，g0',g1',g3' all defined in fp2
+
+void fp12_mul_sparse_t(fp12_t c, const fp12_t f, const fp12_t l){
+	fp4_t t2, t1,c1,c2,c0;
+
+	//1. t1 = f_2*l_0
+	fp4_mul_fp2(t1,f[1][1],l[0][0]);
+	
+	//2. t2 = f_0*l_0
+	fp4_mul(t2,f[0][0],l[0][0]);
+
+	//3. c0 = f1*l1
+	fp4_mul(c0,f[0][2],l[1][1]);
+
+	//4. c0 = c0*v
+	fp4_mul_art(c0,c0);
+
+	//5. c0 = c0+t2
+	fp4_add(c0,c0,t2);
+
+	//6. c1 = f1*l0
+	fp4_mul(c0,f[0][2],l[0][0]);
+
+	//7. c2=t1*v
+	fp4_mul_art(c2,t1);
+
+	//8. c1 = c1+c2
+	fp4_add(c1,c1,c2);
+
+	//9. t2=t1+t2
+	fp4_add(t2,t1,t2);
+
+	//10. t1=f0+f2
+	fp4_add(t1,f[0][0],f[1][1]);
+
+	//11. c2=l0+l1
+	fp4_add(c2,l[0][0],l[1][1]);
+
+	//12. c2=t1*c2
+	fp4_mul(c2,t1,c2);
+
+	//13. c2 = c2 - t2
+	fp4_sub(c2,c2,t2);
+	fp4_copy(c[0][0],c0);
+	fp4_copy(c[0][2],c1);
+	fp4_copy(c[1][1],c2);
+
+}
+
+void fp12_mul_dxs_t(fp12_t c,fp12_t a,fp12_t b){
+	fp4_t t0, t1, t2, t3, t4;
+
+	fp4_null(t0);
+	fp4_null(t1);
+	fp4_null(t2);
+	fp4_null(t3);
+	fp4_null(t4);
+
+	RLC_TRY {
+		fp4_new(t0);
+		fp4_new(t1);
+		fp4_new(t2);
+		fp4_new(t3);
+		fp4_new(t4);
+
+		/* Karatsuba algorithm. */
+
+		/* t0 = a_0 * b_0. */
+		fp4_mul(t0,a[0][0],b[0][0]);
+		fp4_add(t3,a[0][2],a[1][1]);
+		fp4_add(t4,a[0][0],a[0][2]);
+
+		if (fp4_is_zero(b[1][1])) {
+			/* t1 = a_1 * b_1. */
+			fp8_mul(t1, a[0][2], b[0][2]);
+			/* b_2 = 0. */
+
+			fp4_mul(t3, t3, b[0][2]);
+			fp4_sub(t3, t3, t1);
+			fp4_mul_art(t3, t3);
+			fp4_add(t3, t3, t0);
+
+			fp4_add(t2, b[0][0], b[0][2]);
+			fp4_mul(t4, t4, t2);
+			fp4_sub(t4, t4, t0);
+			fp4_sub(c[0][2], t4, t1);
+
+			fp4_add(t4, a[0][0], a[1][1]);
+			fp4_mul(c[1][1], t4, b[0][0]);
+			fp4_sub(c[1][1], c[1][1], t0);
+			fp4_add(c[1][1], c[1][1], t1);
+		} else {
+			/* b_1 = 0. */
+			/* t2 = a_2 * b_2. */
+			fp4_mul(t1, a[1][1], b[1][1]);
+
+			fp4_mul(t3, t3, b[1][1]);
+			fp4_sub(t3, t3, t1);
+			fp4_mul_art(t3, t3);
+			fp4_add(t3, t3, t0);
+
+			fp4_mul(t4, t4, b[0][0]);
+			fp4_sub(t4, t4, t0);
+			fp4_mul_art(t2, t1);
+			fp4_add(c[0][2], t4, t2);
+
+			fp4_add(t4, a[0][0], a[1][1]);
+			fp4_add(t2, b[0][0], b[1][1]);
+			fp4_mul(c[1][1], t4, t2);
+			fp4_sub(c[1][1], c[1][1], t0);
+			fp4_sub(c[1][1], c[1][1], t1);
+		}
+		
+		fp4_copy(c[0][0], t3);
+	} RLC_CATCH_ANY {
+		RLC_THROW(ERR_CAUGHT);
+	} RLC_FINALLY {
+		fp4_free(t0);
+		fp4_free(t1);
+		fp4_free(t2);
+		fp4_free(t3);
+		fp4_free(t4);
+	}
+}
+
+
 
 // r = (a0 + a1*w + a2*w^2)*b3'w^3，其中b3'是fp2上的元素，也就是b0中的高位fp2，即b3'*w^3 = b3'*v
 void fp12_mul_sparse2(fp12_t r, fp12_t a, fp12_t b){
@@ -3878,13 +4012,6 @@ void sm9_pairing_fast_step_test2(fp12_t r, const ep2_t Q, const ep_t P){
 	return ;
 }
 
-
-// for H1() and H2()
-// h = (Ha mod (n-1)) + 1;  h in [1, n-1], n is the curve order, Ha is 40 bytes from hash
-static const sm9_bn_t SM9_ONE = {1,0,0,0,0,0,0,0};
-static const sm9_barrett_bn_t SM9_MU_N_MINUS_ONE = {0xdfc97c31, 0x74df4fd4, 0xc9c073b0, 0x9c95d85e, 0xdcd1312c, 0x55f73aeb, 0xeb5759a6, 0x67980e0b, 0x00000001};
-static const sm9_bn_t SM9_N_MINUS_ONE = {0xd69ecf24, 0xe56ee19c, 0x18ea8bee, 0x49f2934b, 0xf58ec744, 0xd603ab4f, 0x02a3a6f1, 0xb6400000};
-
 static int sm9_barrett_bn_cmp(const sm9_barrett_bn_t a, const sm9_barrett_bn_t b)
 {
 	int i;
@@ -4390,7 +4517,7 @@ int sm9_signature_from_der(SM9_SIGNATURE *sig, const uint8_t **in, size_t *inlen
 		error_print();
 		return -1;
 	}
-
+	printf("Slen is%d\n",Slen);
 	bn_read_bin(sig->h,h,hlen);
 	ep_read_bin(sig->S,S,Slen);
 
@@ -4400,10 +4527,12 @@ int sm9_signature_from_der(SM9_SIGNATURE *sig, const uint8_t **in, size_t *inlen
 int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 	size_t klen, uint8_t *kbuf, ep_t C)
 {	
-	bn_t r;
+	bn_t r,N;
 	fp12_t w;
 	bn_null(r);
 	bn_new(r);
+	bn_null(N);
+	bn_new(N);
 	fp12_null(w);
 	fp12_new(w);
 
@@ -4412,6 +4541,8 @@ int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 	ep2_new(SM9_P2);
 	g2_get_gen(SM9_P2);
 
+	bn_read_str(N,SM9_N,strlen(SM9_N),16);
+	bn_sub_dig(N,N,1);
 	uint8_t wbuf[32 * 12];
 	uint8_t fubw[32 * 12];
 	uint8_t cbuf[65];
@@ -4421,18 +4552,21 @@ int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 	sm9_hash1(r, id, idlen, SM9_HID_ENC);
 	ep_mul_gen(C,r);
 	ep_add(C,C,mpk->Ppube);
-
-	char rr[] = "AAC0541779C8FC45E3E2CB25C12B5D2576B2129AE8BB5EE2CBE5EC9E785C";
+	//just for correctness test
+	char kem_r[] = "74015F8489C01EF4270456F9E6475BFB602BDE7F33FD482AB4E3684A6722";
+	char enc_r[] = "AAC0541779C8FC45E3E2CB25C12B5D2576B2129AE8BB5EE2CBE5EC9E785C";
 	
 	do {
 		// A2: rand r in [1, N-1]
-		//if (sm9_fn_rand(r) != 1) {
-		//	error_print();
-		//	return -1;
-		//}
-		bn_read_str(r,rr,strlen(rr),16);
+		do{
+			bn_rand(r,RLC_POS,256);
+		}while((bn_cmp_dig(r,1) == -1) || (bn_cmp(r,N) == 1));
+		
+		bn_read_str(r,kem_r,strlen(kem_r),16);
 		// A3: C1 = r * Q
 		ep_mul(C,C,r);
+		printf("C is:\n");
+	ep_print(C);
 
 		ep_write_bin(cbuf,65,C,0);
 		//sm9_point_to_uncompressed_octets(C, cbuf);
@@ -4446,7 +4580,6 @@ int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 		for(int i = 0;i<384;i++){
 			fubw[(11-i/32)*32+i%32] = wbuf[i];
 		}
-
 		// A6: K = KDF(C || w || ID_B, klen), if K == 0, goto A2
 		sm3_kdf_init(&kdf_ctx, klen);
 		sm3_kdf_update(&kdf_ctx, cbuf + 1, 64);
@@ -4462,7 +4595,10 @@ int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 	gmssl_secure_clear(wbuf, sizeof(wbuf));
 	gmssl_secure_clear(fubw, sizeof(fubw));
 	gmssl_secure_clear(&kdf_ctx, sizeof(kdf_ctx));
-
+	printf("\nK is :\n");
+	//when using kem, klen = klen - datalen(20)
+	print_bytes(kbuf,klen);
+	printf("klen is:%d\n",klen);
 	// A7: output (K, C)
 	return 1;
 }
@@ -4504,7 +4640,6 @@ int sm9_kem_decrypt(const SM9_ENC_KEY *key, const char *id, size_t idlen, const 
 		error_print();
 		return -1;
 	}
-
 	fp12_free(w);
 	gmssl_secure_clear(wbuf, sizeof(wbuf));
 	gmssl_secure_clear(fubw, sizeof(fubw));

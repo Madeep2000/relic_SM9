@@ -48,28 +48,12 @@
 #include <stdint.h>
 #include <getopt.h>
 
-#define NOTHING         -1
-
-#define SIGN_DEFAULT    0
-#define SIGN_FILE		1
-#define SIGN_NUM		2
-#define VERI_DEFAULT    3
-#define VERI_FILE		4
-#define VERI_NUM		5
-
-#define ENC_DEFAULT     6
-#define ENC_FILE		7
-#define ENC_NUM		    8
-#define DEC_DEFAULT     9
-#define DEC_FILE	   10
-#define DEC_NUM		   11
-
 void print_usage(char *program_name) {
     printf("Usage: %s [--sign(=dir0)] [--enc(=dir0)] [--user-id=value] [--master-key-dir=dir1] [--user-key-dir=dir2] [-h]\n", program_name);
     printf("Options:\n");
 	printf("--sign(=dir0)            Specify the path of sign master-private-key,generate such a key if there is no dir0.\n");
     printf("--enc(=dir0)             Specify the path of enc  master private key,generate such a key if there is no dir0.\n");
-    printf("**NOTICE**: --sign --enc are mutually exclusive options\n");
+    printf("**NOTICE**: --sign --enc are opposing options\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
     printf("--master-key-dir=dir1    Store a new master-private-key in dir1\n");
     printf("--user-key-dir=dir2      Store a new   user-private-key in dir2\n");
