@@ -100,6 +100,7 @@ ADD_MODULE(sm9_server)
 ADD_MODULE(sm9_client)
 
 ADD_MODULE(sm9_kem)
+ADD_MODULE(sm9_dh)
 
 ADD_MODULE(rand)
 ADD_MODULE(core)

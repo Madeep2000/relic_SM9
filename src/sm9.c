@@ -129,9 +129,8 @@ void sign_master_key_init(SM9_SIGN_MASTER_KEY *key){
 }
 
 
-//read ks 
+//set ks 
 void sign_master_key_set(SM9_SIGN_MASTER_KEY *key,uint8_t ks[],int kslen){
-	//print_bytes(ks,strlen(ks));
 	bn_null(key->ks);
 	bn_new(key->ks);
 	ep2_null(key->Ppubs);
@@ -139,11 +138,22 @@ void sign_master_key_set(SM9_SIGN_MASTER_KEY *key,uint8_t ks[],int kslen){
 
 	bn_read_bin(key->ks,ks,kslen);
 	ep2_mul_gen(key->Ppubs,key->ks);
-	bn_print(key->ks);
 
 	return;
 }
 
+//read ks in printable array
+void sign_master_key_read(SM9_SIGN_MASTER_KEY *key,char ks[],int kslen,int radix){
+	bn_null(key->ks);
+	bn_new(key->ks);
+	ep2_null(key->Ppubs);
+	ep2_new(key->Ppubs);
+
+	bn_read_str(key->ks,ks,kslen,radix);
+	ep2_mul_gen(key->Ppubs,key->ks);
+
+	return;
+}
 
 //random ks
 void sign_master_key_gen(SM9_SIGN_MASTER_KEY *key){
@@ -199,19 +209,35 @@ void enc_master_key_init(SM9_ENC_MASTER_KEY *tem){
 	bn_new(tem->ke);
 	ep_null(tem->Ppube);
 	ep_new(tem->Ppube);
+	//char ke[] = "2E65B0762D042F51F0D23542B13ED8CFA2E9A0E7206361E013A283905E31F";
 	char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
 	bn_read_str(tem->ke,ke,strlen(ke),16);
 	ep_mul_gen(tem->Ppube,tem->ke);
 	return;
 }
 
-//read ke
+//set ke in binary array
 void enc_master_key_set(SM9_ENC_MASTER_KEY *tem,uint8_t ke[],int kelen){
+
 	bn_null(tem->ke);
 	bn_new(tem->ke);
 	ep_null(tem->Ppube);
 	ep_new(tem->Ppube);
 	bn_read_bin(tem->ke,ke,kelen);
+	ep_mul_gen(tem->Ppube,tem->ke);
+	return;
+}
+
+
+//read ke in a printable(char) array
+void enc_master_key_read(SM9_ENC_MASTER_KEY *tem,char *ke,int kelen,int radix){
+
+	bn_null(tem->ke);
+	bn_new(tem->ke);
+	ep_null(tem->Ppube);
+	ep_new(tem->Ppube);
+	bn_read_str(tem->ke,ke,kelen,radix);
+	
 	ep_mul_gen(tem->Ppube,tem->ke);
 	return;
 }
@@ -3058,7 +3084,6 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 		// fp12_sqr_t(f_den, f_den);
 
 		sm9_eval_g_tangent(g_num, g_den, T, P);
-		// PERFORMANCE_TEST("sm9_eval_g_tangent",sm9_eval_g_tangent(g_num, g_den, T, P),10000);
 
 		fp12_mul_sparse(f_num, f_num, g_num);
 		// fp12_mul_sparse(f_den, f_den, g_den);
@@ -3067,7 +3092,6 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 		// c.2)
 		if (abits[i] == '1'){
 			sm9_eval_g_line_no_den(g_num, g_den, T, Q, P);
-			// PERFORMANCE_TEST("sm9_eval_g_line",sm9_eval_g_line(g_num, g_den, T, Q, P),10000);
 			fp12_mul_sparse(f_num, f_num, g_num);
 			// fp12_mul_sparse2(f_den, f_den, g_den);
 
@@ -3102,7 +3126,6 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 	// fp12_mul_t(r, f_num, f_den);  // r = f_num*f_den = f
 	fp12_copy(r, f_num);
 	pp_pow_bn_t(r,r); // r = f^{(q^12-1)/r'}
-	// PERFORMANCE_TEST_NEW("sm9_final_exponent", sm9_final_exponent(r, r));
 
 	ep_free(_p);
 	bn_free(n);
@@ -4198,6 +4221,39 @@ int sm9_hash1(bn_t h1, const char *id, size_t idlen, uint8_t hid)
 	return 1;
 }
 
+int sm9_exch_master_key_extract_key(SM9_ENC_MASTER_KEY *msk, const char *id, size_t idlen,
+	SM9_ENC_KEY *key)
+{
+	bn_t t,group_order;
+
+	bn_null(t);
+	bn_new(t);
+	bn_null(group_order);
+	bn_new(group_order);
+	g1_get_ord(group_order);
+
+	// t1 = H1(ID || hid, N) + ke
+	sm9_hash1(t, id, idlen, SM9_HID_EXCH);
+	bn_add(t, t, msk->ke);
+	//sm9_fn_add(t, t, msk->ks);
+	if (bn_is_zero(t)) {
+		error_print();
+		return -1;
+	}
+
+	// t2 = ke * t1^-1
+	
+	bn_mod_inv(t,t,group_order);
+	bn_mul(t,t,msk->ke);
+	
+	// de = t2 * P2
+	ep2_mul_gen(key->de,t);
+	ep_copy(key->Ppube,msk->Ppube);
+	//key->Ppube = msk->Ppube;
+	bn_free(t);
+	bn_free(group_order);
+	return 1;
+}
 
 
 int sm9_enc_master_key_extract_key(SM9_ENC_MASTER_KEY *msk, const char *id, size_t idlen,
@@ -4565,8 +4621,6 @@ int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 		bn_read_str(r,kem_r,strlen(kem_r),16);
 		// A3: C1 = r * Q
 		ep_mul(C,C,r);
-		printf("C is:\n");
-	ep_print(C);
 
 		ep_write_bin(cbuf,65,C,0);
 		//sm9_point_to_uncompressed_octets(C, cbuf);
@@ -4703,6 +4757,269 @@ int sm9_do_decrypt(const SM9_ENC_KEY *key, const char *id, size_t idlen,
 	return 1;
 }
 
+int sm9_exchange_A1(const SM9_ENC_KEY *usr, const char *id, size_t idlen,ep_t R,bn_t ra){
+	
+	bn_t N;
+	bn_null(N);
+	bn_new(N);
+
+	sm9_hash1(ra, id, idlen, SM9_HID_EXCH);
+	ep_mul_gen(R,ra);
+	ep_add(R,R,usr->Ppube);
+	//just for correctness test
+	char exch_ra[] = "5879DD1D51E175946F23B1B41E93BA31C584AE59A426EC1046A4D03B06C8";
+
+	// A2: rand r in [1, N-1]
+	bn_read_str(N,SM9_N,strlen(SM9_N),16);
+	bn_sub_dig(N,N,1);
+	do{
+		bn_rand(ra,RLC_POS,256);
+	}while((bn_cmp_dig(ra,1) == -1) || (bn_cmp(ra,N) == 1));
+	bn_read_str(ra,exch_ra,strlen(exch_ra),16);
+	// A3: R = r * Q
+	ep_mul(R,R,ra);
+	return 1;
+}
+
+int sm9_exchange_B1(const SM9_ENC_KEY *usr,fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t klen,uint8_t *kbuf){
+
+	SM3_KDF_CTX kdf_ctx;
+	SM3_CTX sb_ctx;
+
+	g2_t gen2;
+	g2_null(gen2);
+	g2_new(gen2);	
+	g2_get_gen(gen2);
+
+	bn_t r,N;
+	bn_null(r);
+	bn_new(r);
+	bn_null(N);
+	bn_new(N);
+
+	uint8_t g1buf[32 * 12];
+	uint8_t g2buf[32 * 12];
+	uint8_t g3buf[32 * 12];
+	uint8_t g1_real[32 * 12];
+	uint8_t g2_real[32 * 12];
+	uint8_t g3_real[32 * 12];
+
+	uint8_t Rbbuf[65];
+	uint8_t Rabuf[65];
+	uint8_t dgst[32];
+	uint8_t eighty_two[1] = {0x82};
+
+	sm9_hash1(r, ida, idalen, SM9_HID_EXCH);
+	ep_mul_gen(Rb,r);
+	ep_add(Rb,Rb,usr->Ppube);
+	//just for correctness test
+	char exch_rb[] = "18B98C44BEF9F8537FB7D071B2C928B3BC65BD3D69E1EEE213564905634FE";
+
+	// A2: rand r in [1, N-1]
+	bn_read_str(N,SM9_N,strlen(SM9_N),16);
+	bn_sub_dig(N,N,1);
+	do{
+		bn_rand(r,RLC_POS,256);
+	}while((bn_cmp_dig(r,1) == -1) || (bn_cmp(r,N) == 1));
+	bn_read_str(r,exch_rb,strlen(exch_rb),16);
+	// A3: R = r * Q
+	ep_mul(Rb,Rb,r);
+
+	ep_write_bin(Rabuf,65,Ra,0);
+	ep_write_bin(Rbbuf,65,Rb,0);
+
+	sm9_pairing_fastest(g_1,usr->de,Ra);
+	fp12_pow_t(g_3,g_1,r);
+	sm9_pairing_fastest(g_2,gen2,usr->Ppube);
+	fp12_pow_t(g_2,g_2,r);
+
+	fp12_write_bin(g1buf,32*12,g_1,0);
+	fp12_write_bin(g2buf,32*12,g_2,0);
+	fp12_write_bin(g3buf,32*12,g_3,0);
+
+	for(int i = 0;i<384;i++){
+		g1_real[(11-i/32)*32+i%32] = g1buf[i];
+		g2_real[(11-i/32)*32+i%32] = g2buf[i];
+		g3_real[(11-i/32)*32+i%32] = g3buf[i];
+	}
+
+	sm3_kdf_init(&kdf_ctx, klen);
+	sm3_kdf_update(&kdf_ctx, (uint8_t *)ida, idalen);
+	sm3_kdf_update(&kdf_ctx, (uint8_t *)idb, idblen);
+	sm3_kdf_update(&kdf_ctx, Rabuf + 1, 64);
+	sm3_kdf_update(&kdf_ctx, Rbbuf + 1, 64);
+	sm3_kdf_update(&kdf_ctx, g1_real,sizeof(g1_real));
+	sm3_kdf_update(&kdf_ctx, g2_real,sizeof(g2_real));
+	sm3_kdf_update(&kdf_ctx, g3_real,sizeof(g3_real));
+	sm3_kdf_finish(&kdf_ctx, kbuf);
+
+	sm3_init(&sb_ctx);
+    sm3_update(&sb_ctx, g2_real,sizeof(g2_real));
+	sm3_update(&sb_ctx, g3_real,sizeof(g3_real));
+	sm3_update(&sb_ctx, (uint8_t *)ida, idalen);
+	sm3_update(&sb_ctx, (uint8_t *)idb, idblen);
+	sm3_update(&sb_ctx, Rabuf + 1, 64);
+	sm3_update(&sb_ctx, Rbbuf + 1, 64);
+	sm3_finish(&sb_ctx, dgst);
+
+	sm3_init(&sb_ctx);
+	sm3_update(&sb_ctx, eighty_two,sizeof(eighty_two));
+	sm3_update(&sb_ctx, g1_real,sizeof(g1_real));
+	sm3_update(&sb_ctx, dgst,sizeof(dgst));
+	sm3_finish(&sb_ctx, dgst);
+	print_bytes(dgst,32);
+}
+
+
+int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t klen,uint8_t *kbuf,size_t salen,uint8_t *sa){
+
+	if(salen < 32){
+		printf("insuffent memory");
+		return -1;
+	}
+
+	SM3_KDF_CTX kdf_ctx;
+	SM3_CTX sb_ctx;
+
+	fp12_t g_1;
+	fp12_null(g_1);
+	fp12_new(g_1);
+	fp12_t g_3;
+	fp12_null(g_3);
+	fp12_new(g_3);
+	fp12_t g_2;
+	fp12_null(g_2);
+	fp12_new(g_2);
+
+	g2_t gen2;
+	g2_null(gen2);
+	g2_new(gen2);	
+	g2_get_gen(gen2);
+	g2_print(gen2);
+
+	uint8_t g1buf[32 * 12];
+	uint8_t g2buf[32 * 12];
+	uint8_t g3buf[32 * 12];
+	uint8_t g1_real[32 * 12];
+	uint8_t g2_real[32 * 12];
+	uint8_t g3_real[32 * 12];
+	uint8_t Rbbuf[65];
+	uint8_t Rabuf[65];
+	uint8_t dgst[32];
+
+	uint8_t eighty_two_and_three[2] = {0x82,0x83};
+
+	sm9_pairing_fastest(g_1,gen2,usr->Ppube);
+	fp12_pow_t(g_1,g_1,ra);
+	sm9_pairing_fastest(g_2,usr->de,Rb);
+	fp12_pow_t(g_3,g_2,ra);
+	
+	fp12_write_bin(g1buf,32*12,g_1,0);
+	fp12_write_bin(g2buf,32*12,g_2,0);
+	fp12_write_bin(g3buf,32*12,g_3,0);
+
+	for(int i = 0;i<384;i++){
+		g1_real[(11-i/32)*32+i%32] = g1buf[i];
+		g2_real[(11-i/32)*32+i%32] = g2buf[i];
+		g3_real[(11-i/32)*32+i%32] = g3buf[i];
+	}
+
+	ep_write_bin(Rabuf,65,Ra,0);
+	ep_write_bin(Rbbuf,65,Rb,0);
+
+	sm3_init(&sb_ctx);
+    sm3_update(&sb_ctx, g2_real,sizeof(g2_real));
+	sm3_update(&sb_ctx, g3_real,sizeof(g3_real));
+	sm3_update(&sb_ctx, (uint8_t *)ida, idalen);
+	sm3_update(&sb_ctx, (uint8_t *)idb, idblen);
+	sm3_update(&sb_ctx, Rabuf + 1, 64);
+	sm3_update(&sb_ctx, Rbbuf + 1, 64);
+	sm3_finish(&sb_ctx, dgst);
+
+	sm3_init(&sb_ctx);
+	sm3_update(&sb_ctx, eighty_two_and_three+1,sizeof(eighty_two_and_three)/2);
+	sm3_update(&sb_ctx, g1_real,sizeof(g1_real));
+	sm3_update(&sb_ctx, dgst,sizeof(dgst));
+	sm3_finish(&sb_ctx, sa);
+	print_bytes(sa,32);
+
+	sm3_init(&sb_ctx);
+	sm3_update(&sb_ctx, eighty_two_and_three,sizeof(eighty_two_and_three)/2);
+	sm3_update(&sb_ctx, g1_real,sizeof(g1_real));
+	sm3_update(&sb_ctx, dgst,sizeof(dgst));
+	sm3_finish(&sb_ctx, dgst);
+	print_bytes(dgst,32);
+
+	sm3_kdf_init(&kdf_ctx, klen);
+	sm3_kdf_update(&kdf_ctx, (uint8_t *)ida, idalen);
+	sm3_kdf_update(&kdf_ctx, (uint8_t *)idb, idblen);
+	sm3_kdf_update(&kdf_ctx, Rabuf + 1, 64);
+	sm3_kdf_update(&kdf_ctx, Rbbuf + 1, 64);
+	sm3_kdf_update(&kdf_ctx, g1_real,sizeof(g1_real));
+	sm3_kdf_update(&kdf_ctx, g2_real,sizeof(g2_real));
+	sm3_kdf_update(&kdf_ctx, g3_real,sizeof(g3_real));
+	sm3_kdf_finish(&kdf_ctx, kbuf);
+
+	print_bytes(kbuf,klen);
+	
+	return 1;
+}
+
+int sm9_exchange_B2(fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t salen,uint8_t *sa){
+	if(salen < 32){
+		printf("insuffent memory");
+		return -1;
+	}
+	SM3_CTX sb_ctx;
+
+	uint8_t Rbbuf[65];
+	uint8_t Rabuf[65];
+	uint8_t g1buf[32 * 12];
+	uint8_t g2buf[32 * 12];
+	uint8_t g3buf[32 * 12];
+	uint8_t g1_real[32 * 12];
+	uint8_t g2_real[32 * 12];
+	uint8_t g3_real[32 * 12];
+	uint8_t dgst[32];
+	uint8_t eighty_three[1] = {0x83};
+
+
+	ep_write_bin(Rabuf,65,Ra,0);
+	ep_write_bin(Rbbuf,65,Rb,0);
+
+	fp12_write_bin(g1buf,32*12,g_1,0);
+	fp12_write_bin(g2buf,32*12,g_2,0);
+	fp12_write_bin(g3buf,32*12,g_3,0);
+
+	for(int i = 0;i<384;i++){
+		g1_real[(11-i/32)*32+i%32] = g1buf[i];
+		g2_real[(11-i/32)*32+i%32] = g2buf[i];
+		g3_real[(11-i/32)*32+i%32] = g3buf[i];
+	}
+
+	sm3_init(&sb_ctx);
+    sm3_update(&sb_ctx, g2_real,sizeof(g2_real));
+	sm3_update(&sb_ctx, g3_real,sizeof(g3_real));
+	sm3_update(&sb_ctx, (uint8_t *)ida, idalen);
+	sm3_update(&sb_ctx, (uint8_t *)idb, idblen);
+	sm3_update(&sb_ctx, Rabuf + 1, 64);
+	sm3_update(&sb_ctx, Rbbuf + 1, 64);
+	sm3_finish(&sb_ctx, dgst);
+	sm3_init(&sb_ctx);
+	sm3_update(&sb_ctx, eighty_three,sizeof(eighty_three));
+	sm3_update(&sb_ctx, g1_real,sizeof(g1_real));
+	sm3_update(&sb_ctx, dgst,sizeof(dgst));
+	sm3_finish(&sb_ctx, dgst);
+	print_bytes(dgst,32);
+	if(memcmp(dgst,sa,32) != 0){
+		printf("ERROR\n");
+		return -1;
+	}
+	else{
+		printf("key exchange sussess!\n");
+	}
+	return 1;
+}
 
 int sm9_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 	const uint8_t *in, size_t inlen, uint8_t *out, size_t *outlen)
@@ -5060,4 +5377,5 @@ int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,
 	ep_free(signature.S);
 	return ret;
 }
+
 

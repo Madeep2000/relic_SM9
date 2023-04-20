@@ -217,7 +217,6 @@ int test_sm9_encrypt_cmdfile(uint8_t data[],size_t datalen,char id[],size_t idle
 	format_bytes(stdout, 0, 0, "plaintext", dec, declen);
 	//write_file("plaintext",dec,declen);
 	printf("%s() ok\n", __FUNCTION__);
-    ep2_free(de);
 	
 	ep_free(msk.Ppube);
 	bn_free(msk.ke);
@@ -354,7 +353,8 @@ int main(int argc, char *argv[]) {
 */
 
 int main(){
-    if (core_init() != RLC_OK) {
+    
+	if (core_init() != RLC_OK) {
 		core_clean();
 		return 1;
 	}
@@ -370,4 +370,3 @@ int main(){
     core_clean();
     return 0;
 }
-
