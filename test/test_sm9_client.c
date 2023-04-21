@@ -52,25 +52,25 @@ void print_usage(char *program_name) {
     printf("Relic-SM9 for client.\n");
     //printf("Usage: %s [sign|verify|kem|kdm|enc|dec] [--message=dir0] [--cipher=dir1] [--sign=dir2] [--verify=dir2'] [--kem=dir3] [--kdm=dir3'] [--enc=dir4] [--dec=dir4'] [--user-id=value] [--user-key-dir=dir5] [-h]\n", program_name);
     printf("Mods:\n");
-    printf("[--sign|--verify|--kem|--kdm|--enc|--dec]\n");
+    printf("[--sign|--verify|--kem|--kdm|--enc|--dec|--exchange]\n");
     printf("Details:\n");
 
     printf("\n--sign:                  Specify the signature operation.\n");
     printf("--inpub=dir1             Specify master's public key in dir1\n");
-    printf("--inkey=dir2             Specify the private key file in dir2.\n");
+    printf("--inkey=dir2             Specify user's private key file in dir2.\n");
     printf("--infile=dir3            Specify the input file as plaintext/message in dir3.\n");
     printf("--outfile=dir4           Specify the output file as signature in dir4.\n");
 
     printf("\n--verify:                Specify the verification operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--inpub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1             Specify master's public key in dir1\n");
     printf("--infile=dir2            Specify the input file as plaintext/message in dir2.\n");
     printf("--insig=dir3             Specify the input file as signature in dir3.\n");
     printf("If the verification is successful, print Verified OK, otherwise print Verification Failure.\n");
 
     printf("\n--kem                    Specify the Key Encapsulation operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--inpub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1             Specify master's public key in dir1\n");
     printf("--outkey=dir2            Specify the output file as key in dir2.\n");
     printf("--outfile=dir3           Specify the output file as ciphertext in dir3.\n");
 
@@ -84,25 +84,37 @@ void print_usage(char *program_name) {
 
     printf("\n--enc                    Specify the encryption operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--inpub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1             Specify master's public key in dir1\n");
     printf("--infile=dir2            Specify the input file as plaintext/message in dir2.\n");
     printf("--outfile=dir3           Specify the output file as ciphertext in dir3.\n");
     
     printf("\n--dec                    Specify the decryption operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--inkey=dir1             Specify the private key file in dir1.\n");
+    printf("--inkey=dir1             Specify user's private key file in dir1.\n");
     printf("--infile=dir2            Specify the input file as ciphertext in dir2.\n");
     printf("--outfile=dir3           Specify the output file as plaintext in dir3.\n");
 
+    printf("\n--exchange=role          Specify the key exchange operation and enter your role = [initiator | responder].\n");
+    printf("--user-id=value1         Specify user's id as user's public key\n");
+    printf("--other-id=value2        Specify another user's id as his/her public key\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
+    printf("--inkey=dir2             Specify user's private key file in dir2.\n");
+    printf("--inKEY=dir3             Specify the input file as another user's temporary public key in dir3.\n");
+    printf("--outkey=dir4            Specify the output file as session key in dir4.");
+    printf("--outKEY=dir5            Specify the output file as user's temporary public key in dir5.\n");
+    printf("--check                  Check whether the key exchange is sussess.\n");
+    printf("--infile=dir6            Specify the input file as another's hash option in dir6\n");
+    printf("--outfile=dir7           Specify the output file as user's hash option in dir7.\n");
+
 	printf("\nEXAMPLE1: %s --sign --inpub=pub.bin --inkey=Alicekey.bin --infile=message.bin --outfile=sig.bin\n",program_name);
-    printf("EXAMPLE2: %s --verify --user-id=Alice --inpub=pub.bin --infile=message.bin --insig=sig.bin\n",program_name);
-    printf("EXAMPLE3: %s --kem --user-id=Bob --inpub=pub.bin --outkey=key.bin --outfile=sig.bin\n",program_name);
+    printf("EXAMPLE2: %s --verify --user-id=Alice --master-pub=pub.bin --infile=message.bin --insig=sig.bin\n",program_name);
+    printf("EXAMPLE3: %s --kem --user-id=Bob --master-pub=pub.bin --outkey=key.bin --outfile=sig.bin\n",program_name);
     printf("EXAMPLE4: %s --kdm --user-id=Bob --inkey=key.bin --infile=cipher.bin --outkey=key.bin\n",program_name);
-    printf("EXAMPLE5: %s --enc --user-id=Bob --inpub=pub.bin --infile=message.bin --outfile=cipher.bin\n",program_name);
+    printf("EXAMPLE5: %s --enc --user-id=Bob --master-pub=pub.bin --infile=message.bin --outfile=cipher.bin\n",program_name);
     printf("EXAMPLE6: %s --dec --user-id=Bob --inkey=key.bin --infile=cipher.bin --outfile=message.bin\n",program_name);
     
 
-    printf("\n-h                       Print this help message and exit\n\n");
+    printf("\n-h                     Print this help message and exit\n\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -149,15 +161,19 @@ int main(int argc, char *argv[]) {
     int e_flag = 0;
     //dec
     int d_flag = 0;
+    //exchange
+    int x_flag = 0;
 
     char *ifile = NULL;
     char *ofile = NULL;
     char *user_id = NULL;
+    char *other_id = NULL;
     char *in_pub = NULL;
     char *in_sig = NULL;
     char *in_key = NULL;
     char *in_K = NULL;
     char *out_key = NULL;
+    char *out_K = NULL;
     
     uint8_t *data = NULL;
     uint8_t *pub_data = NULL;
@@ -176,8 +192,10 @@ int main(int argc, char *argv[]) {
     int keylen = 0;
     int Klen = 0;
     int idlen = 0;
-    int datalen = 0; 
-
+    int other_idlen = 0;
+    int datalen = 0;
+    int init = 0;
+    int resp = 0;
 
     struct option long_options[] = {
         {"sign", no_argument, NULL, 's'},
@@ -186,19 +204,40 @@ int main(int argc, char *argv[]) {
         {"kdm",no_argument, NULL, 'm'},
         {"enc",no_argument, NULL, 'e'},
         {"dec",no_argument, NULL, 'd'},
+        {"check",no_argument, NULL, '@'},
+        {"exchange",required_argument, NULL, 'x'},
         {"user-id",required_argument, NULL, 'i'},
+        {"other-id",required_argument, NULL, 'r'},
         {"inkey",required_argument,NULL,'?'},
         {"inKEY",required_argument,NULL,'K'},
-        {"inpub",required_argument,NULL,'!'},
+        {"master-pub",required_argument,NULL,'!'},
         {"insig",required_argument,NULL,'g'},
         {"infile",required_argument,NULL,'+'},
         {"outfile",required_argument,NULL,'-'},
         {"outkey",required_argument,NULL,'='},
+        {"outKEY",required_argument,NULL,'o'},
+        {"help",no_argument,NULL, 'h'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc,argv,"K:?:!:g:i:+:-:svkmedh", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc,argv,"K:?:!:g:i:+:-:r:=:o:@svkmedxh", long_options, NULL)) != -1) {
         switch (opt) {
+            case 'x':
+                x_flag = 1;
+                if( (optarg == 1) || (strcmp(optarg,"initiator") == 0) ){
+                    init = 1;
+                }
+                else if( (optarg == -1) || (strcmp(optarg,"responder") == 0) ){
+                    resp = 1;
+                }
+                else{
+                    printf("EROOR:invalid parameter\n");
+                    return -1;
+                }
+                break;
+            case '@':
+                //just a Placebo Button
+                break;
             case 's':
                 s_flag = 1;
                 break;
@@ -222,6 +261,15 @@ int main(int argc, char *argv[]) {
                 user_id = (char *)malloc(idlen * sizeof(char));
 				strcpy((char *)user_id, optarg);
                 if (user_id == NULL) {
+                    printf("Error: failed to allocate memory for id.\n");
+                    return 1;
+                }
+                break;
+            case 'r':
+                other_idlen = strlen(optarg);
+                other_id = (char *)malloc(other_idlen * sizeof(char));
+				strcpy((char *)other_id, optarg);
+                if (other_id == NULL) {
                     printf("Error: failed to allocate memory for id.\n");
                     return 1;
                 }
@@ -307,6 +355,14 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 break;
+            case 'o':
+                out_K = (char *)malloc(strlen(optarg) * sizeof(char));
+				strcpy((char *)out_K, optarg);
+                if (out_K == NULL) {
+                    printf("Error: failed to allocate memory for master-key.\n");
+                    return 1;
+                }
+                break;
             case 'h':
                 print_usage(argv[0]);
                 return 0;
@@ -316,14 +372,27 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if( (e_flag + d_flag + s_flag + v_flag + k_flag + m_flag > 1) || (e_flag + d_flag + s_flag + v_flag + k_flag + m_flag == 0) ){
-        fprintf(stderr, "Error: You must and can only choose one of these parameters : [ --sign --verify --kem --kdm --enc --dec ].\n");
+    if( (e_flag + d_flag + s_flag + v_flag + k_flag + m_flag + x_flag != 1) ){
+        fprintf(stderr, "Error: You must and can only choose one of these parameters : [ --sign --verify --kem --kdm --enc --dec --exchange].\n");
+        exit(1);
+    }
+    if( x_flag == 1 && ( init + resp == 0 ) ){
+        fprintf(stderr, "Error: You must and can only play one role while key exchanging: [ --user-role=initiator | --user-role=responder].\n");
         exit(1);
     }
 
     ep_t C;
     ep_null(C);
     ep_new(C);
+
+    ep_t Cb;
+    ep_null(Cb);
+    ep_new(Cb);
+
+    bn_t ra;
+    bn_null(ra);
+    bn_new(ra);
+
     int ret;
     if(s_flag == 1){
         ep2_read_bin(sign_user.Ppubs,pub_data,publen);
@@ -360,6 +429,7 @@ int main(int argc, char *argv[]) {
         }
     }
     else if(k_flag == 1){
+        //kem
         printf("publen is %d",publen);
         ep_read_bin(enc_master.Ppube,pub_data,publen);
         sm9_kem_encrypt(&enc_master, (char *)user_id, idlen, klen, kbuf, C);
@@ -373,8 +443,8 @@ int main(int argc, char *argv[]) {
         }
 
     }
-    else{
-        //m_flag == 1
+    else if(m_flag == 1){
+        //kdm
         format_bytes(stdout, 0, 0, "secret keydata", K_data, Klen);
         printf("\nKlen%d\n",Klen);
         format_bytes(stdout, 0, 0, "private keydata", key_data, keylen);
@@ -387,7 +457,25 @@ int main(int argc, char *argv[]) {
             write_file(out_key,K_data,Klen);
         }
     }
-    
+    else if( init == 1){
+        sm9_exchange_A1(enc_user,user_id,idlen,C,ra);
+        sm9_exchange_A2(enc_user,C,Cb,ra,user_id,idlen,other_id,other_idlen,);
+        if(out_key != NULL){
+            write_file(out_key,K_data,Klen);
+        }
+        if(ofile != NULL){
+            outlen = 65;
+            ep_write_bin(out,outlen,C,0);
+            write_file(ofile,out,outlen);
+        }
+    }
+    else{
+        //resp == 0
+        sm9_exchange_B1();
+        sm9_exchange_B2();
+    }
+
+    ep_free(Cb);
     ep_free(C);
     sign_master_key_free(&sign_master);
     enc_master_key_free(&enc_master);

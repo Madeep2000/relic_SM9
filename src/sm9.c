@@ -4757,7 +4757,7 @@ int sm9_do_decrypt(const SM9_ENC_KEY *key, const char *id, size_t idlen,
 	return 1;
 }
 
-int sm9_exchange_A1(const SM9_ENC_KEY *usr, const char *id, size_t idlen,ep_t R,bn_t ra){
+int sm9_exchange_A1(const SM9_ENC_KEY *usr, const char *id, size_t idlen,ep_t Ra,bn_t ra){
 	
 	bn_t N;
 	bn_null(N);
@@ -4789,6 +4789,11 @@ int sm9_exchange_B1(const SM9_ENC_KEY *usr,fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t
 	g2_t gen2;
 	g2_null(gen2);
 	g2_new(gen2);	
+
+	ep_t tmp;
+	ep_null(tmp);
+	ep_new(tmp);
+
 	g2_get_gen(gen2);
 
 	bn_t r,N;
@@ -4830,8 +4835,11 @@ int sm9_exchange_B1(const SM9_ENC_KEY *usr,fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t
 
 	sm9_pairing_fastest(g_1,usr->de,Ra);
 	fp12_pow_t(g_3,g_1,r);
-	sm9_pairing_fastest(g_2,gen2,usr->Ppube);
-	fp12_pow_t(g_2,g_2,r);
+
+	//sm9_pairing_fastest(g_2,gen2,usr->Ppube);
+	//fp12_pow_t(g_2,g_2,r);
+	ep_mul(tmp,usr->Ppube,r);
+	sm9_pairing_fastest(g_2,gen2,tmp);
 
 	fp12_write_bin(g1buf,32*12,g_1,0);
 	fp12_write_bin(g2buf,32*12,g_2,0);
@@ -4868,13 +4876,20 @@ int sm9_exchange_B1(const SM9_ENC_KEY *usr,fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t
 	sm3_update(&sb_ctx, dgst,sizeof(dgst));
 	sm3_finish(&sb_ctx, dgst);
 	print_bytes(dgst,32);
+
+	ep_free(tmp);
+	g2_free(gen2);
+	bn_free(r);
+	bn_free(N);
+
+	return 1;
 }
 
 
 int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t klen,uint8_t *kbuf,size_t salen,uint8_t *sa){
 
 	if(salen < 32){
-		printf("insuffent memory");
+		RLC_THROW(ERR_NO_BUFFER);
 		return -1;
 	}
 
@@ -4895,7 +4910,10 @@ int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *i
 	g2_null(gen2);
 	g2_new(gen2);	
 	g2_get_gen(gen2);
-	g2_print(gen2);
+
+	ep_t tmp;
+	ep_null(tmp);
+	ep_new(tmp);
 
 	uint8_t g1buf[32 * 12];
 	uint8_t g2buf[32 * 12];
@@ -4909,10 +4927,17 @@ int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *i
 
 	uint8_t eighty_two_and_three[2] = {0x82,0x83};
 
-	sm9_pairing_fastest(g_1,gen2,usr->Ppube);
-	fp12_pow_t(g_1,g_1,ra);
+	//sm9_pairing_fastest(g_1,gen2,usr->Ppube);
+	//fp12_pow_t(g_1,g_1,ra);
+	//PERFORMANCE_TEST_NEW("e^r",sm9_pairing_fastest(g_1,gen2,usr->Ppube);fp12_pow_t(g_1,g_1,ra));
+	//PERFORMANCE_TEST_NEW("e^r faster",ep_mul(tmp,usr->Ppube,ra);sm9_pairing_fastest(g_1,gen2,tmp));
+	ep_mul(tmp,usr->Ppube,ra);
+	sm9_pairing_fastest(g_1,gen2,tmp);
+
+	//PERFORMANCE_TEST_NEW("e^r",sm9_pairing_fastest(g_2,usr->de,Rb);fp12_pow_t(g_3,g_2,ra));
 	sm9_pairing_fastest(g_2,usr->de,Rb);
 	fp12_pow_t(g_3,g_2,ra);
+	//PERFORMANCE_TEST_NEW("e^r low",sm9_pairing_fastest(g_2,usr->de,Rb);ep_mul(tmp,Rb,ra);sm9_pairing_fastest(g_3,usr->de,tmp));
 	
 	fp12_write_bin(g1buf,32*12,g_1,0);
 	fp12_write_bin(g2buf,32*12,g_2,0);
@@ -4961,13 +4986,18 @@ int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *i
 	sm3_kdf_finish(&kdf_ctx, kbuf);
 
 	print_bytes(kbuf,klen);
-	
+
+	fp12_free(g_1);
+	fp12_free(g_2);
+	fp12_free(g_3);
+	g2_free(gen2);
+	ep_free(tmp);
 	return 1;
 }
 
 int sm9_exchange_B2(fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t salen,uint8_t *sa){
 	if(salen < 32){
-		printf("insuffent memory");
+		RLC_THROW(ERR_NO_BUFFER);
 		return -1;
 	}
 	SM3_CTX sb_ctx;
@@ -5012,7 +5042,7 @@ int sm9_exchange_B2(fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char 
 	sm3_finish(&sb_ctx, dgst);
 	print_bytes(dgst,32);
 	if(memcmp(dgst,sa,32) != 0){
-		printf("ERROR\n");
+		printf("ERROR:key exchange fail!\n");
 		return -1;
 	}
 	else{
@@ -5377,5 +5407,4 @@ int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,
 	ep_free(signature.S);
 	return ret;
 }
-
 

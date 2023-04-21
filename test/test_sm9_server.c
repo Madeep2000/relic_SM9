@@ -63,32 +63,7 @@ void print_usage(char *program_name) {
 }
 
 /*
-int main(){
-    if (core_init() != RLC_OK) {
-		core_clean();
-		return 1;
-	}
-
-	if (pc_param_set_any() != RLC_OK) {
-		RLC_THROW(ERR_NO_CURVE);
-		core_clean();
-		return 0;
-	}
-    SM9_SIGN_MASTER_KEY sign_master;
-    SM9_ENC_MASTER_KEY enc_master;
-
-    sign_master_key_init(&sign_master);
-    enc_master_key_init(&enc_master);
-
-
-    sign_master_key_free(&sign_master);
-    enc_master_key_free(&enc_master);
-    return 0;
-}
-*/
-
 #define MAX_FILE_SIZE 1024
-
 void read_file1(char *filename, char *buffer) {
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) {
@@ -101,6 +76,7 @@ void read_file1(char *filename, char *buffer) {
 
     fclose(fp);
 }
+*/
 
 int main(int argc, char *argv[]) {
     if(argc == 1){
@@ -157,12 +133,13 @@ int main(int argc, char *argv[]) {
         {"sign", optional_argument, NULL, 's'},
         {"enc", optional_argument, NULL, 'e'},
         {"user-id",required_argument, NULL, 'i'},
-        {"master-key-dir",required_argument,NULL,'-'},
-        {"user-key-dir",required_argument,NULL,'+'},
+        {"master-pub",required_argument,NULL,'+'},
+        {"master-key",required_argument,NULL,'-'},
+        {"user-key",required_argument,NULL,'?'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc,argv,"s:e:i:+:-:h", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc,argv,"?:i:+:-:seh", long_options, NULL)) != -1) {
         switch (opt) {
             case 's':
                 if(optarg){
