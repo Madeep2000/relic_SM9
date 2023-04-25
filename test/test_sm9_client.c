@@ -163,6 +163,7 @@ int main(int argc, char *argv[]) {
     int d_flag = 0;
     //exchange
     int x_flag = 0;
+    int check_flag = 0;
 
     char *ifile = NULL;
     char *ofile = NULL;
@@ -185,8 +186,10 @@ int main(int argc, char *argv[]) {
 	size_t outlen = 0;
 
     uint8_t kbuf[287];
-	size_t klen = 32;
+    size_t klen = 32;
 
+    uint8_t sa[32];
+    int salen = 32;
     int publen = 0;
     int siglen = 0;
     int keylen = 0;
@@ -236,7 +239,7 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case '@':
-                //just a Placebo Button
+                check_flag = 1;
                 break;
             case 's':
                 s_flag = 1;
@@ -376,10 +379,24 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: You must and can only choose one of these parameters : [ --sign --verify --kem --kdm --enc --dec --exchange].\n");
         exit(1);
     }
-    if( x_flag == 1 && ( init + resp == 0 ) ){
-        fprintf(stderr, "Error: You must and can only play one role while key exchanging: [ --user-role=initiator | --user-role=responder].\n");
-        exit(1);
+    if( x_flag == 1 ){
+        if( init + resp == 0 ){
+            fprintf(stderr, "Error: You must and can only play one role while key exchanging: [ --user-role=initiator | --user-role=responder].\n");
+            exit(1);
+        }
+        if( check_flag == 1){
+
+        }
     }
+
+    fp12_t g1,g2,g3;
+    fp12_null(g1);
+    fp12_null(g2);
+    fp12_null(g3);
+    fp12_new(g1);
+    fp12_new(g2);
+    fp12_new(g3);
+
 
     ep_t C;
     ep_null(C);
@@ -458,25 +475,58 @@ int main(int argc, char *argv[]) {
         }
     }
     else if( init == 1){
-        sm9_exchange_A1(enc_user,user_id,idlen,C,ra);
-        sm9_exchange_A2(enc_user,C,Cb,ra,user_id,idlen,other_id,other_idlen,);
-        if(out_key != NULL){
-            write_file(out_key,K_data,Klen);
+        // initiator
+        ep_read_bin(enc_user.Ppube,pub_data,publen);      // masterpub
+        ep2_read_bin(enc_user.de,key_data,keylen);        // user's private key
+        sm9_exchange_A1(&enc_user,user_id,idlen,C,ra);
+
+        ep_read_bin(Cb,K_data,Klen);                      // another user's temporary public key
+        
+        if(check_flag == 1){
+            sm9_exchange_A2(&enc_user,C,Cb,ra,user_id,idlen,other_id,other_idlen,klen,kbuf,salen,sa,datalen,data);
+            write_file(ofile,sa,salen);
         }
-        if(ofile != NULL){
+        else{
+            sm9_exchange_A2_without_check(&enc_user,C,Cb,ra,user_id,idlen,other_id,other_idlen,klen,kbuf);
+        }
+        if(out_key != NULL){
+            write_file(out_key,kbuf,klen);
+        }
+        if(out_K != NULL){
             outlen = 65;
             ep_write_bin(out,outlen,C,0);
-            write_file(ofile,out,outlen);
+            write_file(out_K,out,outlen);
         }
     }
     else{
         //resp == 0
-        sm9_exchange_B1();
-        sm9_exchange_B2();
+        ep_read_bin(enc_user.Ppube,pub_data,publen);       // masterpub
+        ep2_read_bin(enc_user.de,key_data,keylen);         // user's private key
+        ep_read_bin(C,K_data,Klen);                        // another user's temporary public key
+        if(check_flag == 1){
+            sm9_exchange_B1(&enc_user,g1,g2,g3,C,Cb,other_id,other_idlen,user_id,idlen,klen,kbuf,salen,sa);
+            sm9_exchange_B2(g1,g2,g3,C,Cb,other_id,other_idlen,user_id,idlen,datalen,data);
+            write_file(ofile,sa,salen);
+        }
+        else{
+            sm9_exchange_B1_without_check(&enc_user,g1,g2,g3,C,Cb,other_id,other_idlen,user_id,idlen,klen,kbuf);
+        }
+        if(out_key != NULL){
+            write_file(out_key,kbuf,klen);
+        }
+        if(out_K != NULL){
+            outlen = 65;
+            ep_write_bin(out,outlen,Cb,0);
+            write_file(out_K,out,outlen);
+        }
+
     }
 
     ep_free(Cb);
     ep_free(C);
+    fp12_free(g1);
+    fp12_free(g2);
+    fp12_free(g3);
     sign_master_key_free(&sign_master);
     enc_master_key_free(&enc_master);
     sign_user_key_free(&sign_user);

@@ -75,6 +75,9 @@ int test_sm9_exchange() {
 
     uint8_t kbuf[16] = {0};
     uint8_t sa[32];
+    uint8_t sb[32];
+    int salen = 32;
+    int sblen = 32;
     int klen = sizeof(kbuf);
 
     //Alice
@@ -84,12 +87,10 @@ int test_sm9_exchange() {
 
 	if (sm9_exch_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &bob_key) < 0) goto err; ++j;
 	if (sm9_exch_master_key_extract_key(&msk, (char *)IDA, sizeof(IDA), &alice_key) < 0) goto err; ++j;
-    PERFORMANCE_TEST_NEW("key exchange:",
     sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra);
-    sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf);
-    sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sizeof(sa),sa);
-    sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),sizeof(sa),sa));
-
+    sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
+    sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb);
+    sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa);
 /*
 	if (sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) < 0) goto err; ++j;
 	format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
@@ -128,6 +129,7 @@ err:
 
 
 int main(){
+    
     if (core_init() != RLC_OK) {
 		core_clean();
 		return 1;
@@ -140,7 +142,7 @@ int main(){
 	}
 
     test_sm9_exchange();
-
+    
     core_clean();
     return 0;
 }
