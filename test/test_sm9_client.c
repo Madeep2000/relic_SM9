@@ -63,14 +63,14 @@ void print_usage(char *program_name) {
 
     printf("\n--verify:                Specify the verification operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--master-pub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--infile=dir2            Specify the input file as plaintext/message in dir2.\n");
     printf("--insig=dir3             Specify the input file as signature in dir3.\n");
     printf("If the verification is successful, print Verified OK, otherwise print Verification Failure.\n");
 
     printf("\n--kem                    Specify the Key Encapsulation operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--master-pub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--outkey=dir2            Specify the output file as key in dir2.\n");
     printf("--outfile=dir3           Specify the output file as ciphertext in dir3.\n");
 
@@ -84,7 +84,7 @@ void print_usage(char *program_name) {
 
     printf("\n--enc                    Specify the encryption operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--master-pub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--infile=dir2            Specify the input file as plaintext/message in dir2.\n");
     printf("--outfile=dir3           Specify the output file as ciphertext in dir3.\n");
     

@@ -129,7 +129,7 @@ void sign_master_key_init(SM9_SIGN_MASTER_KEY *key){
 }
 
 
-//set ks 
+//set ks in binary array
 void sign_master_key_set(SM9_SIGN_MASTER_KEY *key,uint8_t ks[],int kslen){
 	bn_null(key->ks);
 	bn_new(key->ks);

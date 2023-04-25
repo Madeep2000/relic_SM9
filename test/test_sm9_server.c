@@ -49,17 +49,25 @@
 #include <getopt.h>
 
 void print_usage(char *program_name) {
-    printf("Usage: %s [--sign(=dir0)] [--enc(=dir0)] [--user-id=value] [--master-key-dir=dir1] [--user-key-dir=dir2] [-h]\n", program_name);
-    printf("Options:\n");
-	printf("--sign(=dir0)            Specify the path of sign master-private-key,generate such a key if there is no dir0.\n");
-    printf("--enc(=dir0)             Specify the path of enc  master private key,generate such a key if there is no dir0.\n");
-    printf("**NOTICE**: --sign --enc are opposing options\n");
-    printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--master-key-dir=dir1    Store a new master-private-key in dir1\n");
-    printf("--user-key-dir=dir2      Store a new   user-private-key in dir2\n");
-    printf("-h                       Print this help message and exit\n");
-	printf("EXAMPLE1: %s --sign --master-key-dir=master_key_sign.bin\n",program_name);
-    printf("EXAMPLE2: %s --enc=master_key_enc.bin --user-id=Alice --user-key-dir=userkey.bin\n",program_name);
+    printf("Relic-SM9 for server.\n");
+    printf("Mods:\n");
+    printf(" --setup | --keygen \n");
+    printf("Details:\n\n");
+    
+    printf("--setup:                   Setup one pair of master public key and private key\n");
+    printf("--alg=value                Specify the algorathm in value ( sign | enc )\n");
+    printf("[--outfile=dir1]           Store the new master public key at dir1\n");
+    printf("--outkey=dir2              Store the new master private key at dir2\n\n");
+
+    printf("--keygen:                  Generate user's private key using user's id\n");
+    printf("--alg=value1               Specify the algorathm in value ( sign | enc )");
+    printf("--user-id=value2           Specify user's id as user's public key\n");
+    printf("[--infile=dir1]            Specify master public key at dir1\n");
+    printf("--inkey=dir2               Specify master private key at dir2\n");
+    printf("--outkey=dir3              Store user's private key in dir3\n\n");
+	printf("EXAMPLE1: %s --setup --alg=sign --outfile=masterpub.bin --outkey=masterkey.bin\n",program_name);
+    printf("EXAMPLE2: %s --keygen --alg=enc --user-id=Alice --inkey=masterkey.bin --outkey=alicekey.abc\n\n",program_name);
+    printf("-h                         Print this help message and exit\n");
 }
 
 /*
@@ -99,90 +107,80 @@ int main(int argc, char *argv[]) {
     SM9_SIGN_KEY sign_user;
     SM9_ENC_KEY enc_user;
 
-    //default ks and ke
-    sign_master_key_init(&sign_master);
-    enc_master_key_init(&enc_master);
+    //sign_master_key_init(&sign_master);
+    sign_master_key_gen(sign_master);
+    //enc_master_key_init(&enc_master);
+    enc_master_key_gen(&enc_master);
 
     //just allocate memory
     sign_user_key_init(&sign_user);
     enc_user_key_init(&enc_user);
 
-    uint8_t *msk_data = NULL;
-    size_t msk_datalen = 0;
-
-    uint8_t *usk_data[65];
-    size_t usk_datalen = 64;
-
-    uint8_t msk[32];
-
-    int opt;
-
-    int s_flag = 0;
-    int e_flag = 0;
-    int msk_flag = 0;
-    int usk_flag = 0;
-
-    int result = 0;
-    char *ifile = NULL;
-    char *ofile = NULL;
-    char *usrsk = NULL;
-    char *id = NULL;
-    int idlen = 0;
+    bn_t N;
+    bn_null(N);
+    bn_new(N);
+    bn_read_str(N,SM9_N,strlen(SM9_N),16);
+	bn_sub_dig(N,N,1);
 
     struct option long_options[] = {
-        {"sign", optional_argument, NULL, 's'},
-        {"enc", optional_argument, NULL, 'e'},
+        {"setup", no_argument, NULL, 'u'},
+        {"keygen", no_argument, NULL, 'g'},
+        {"alg",required_argument, NULL, 'a'},
         {"user-id",required_argument, NULL, 'i'},
-        {"master-pub",required_argument,NULL,'+'},
-        {"master-key",required_argument,NULL,'-'},
-        {"user-key",required_argument,NULL,'?'},
+        {"infile",optional_argument,NULL,'+'},
+        {"inkey",required_argument,NULL,'?'},
+        {"outfile",optional_argument,NULL,'-'},
+        {"outkey",required_argument,NULL,'='},
+        {"help",no_argument,NULL,'h'},
         {0, 0, 0, 0}
     };
+    int opt;
+    int result = 0;
+    int up_flag = 0;
+    int gen_flag = 0;
+    int s_flag = 0;
+    int e_flag = 0; 
 
-    while ((opt = getopt_long(argc,argv,"?:i:+:-:seh", long_options, NULL)) != -1) {
+    char *ifile = NULL;
+    char *in_key = NULL;
+    char *ofile = NULL;
+    char *out_key = NULL;
+    char *id = NULL;
+    
+    uint8_t *msk_data = NULL;
+    uint8_t *mpub_data = NULL;
+    uint8_t *user_data = NULL;
+    
+    size_t msk_datalen = 0;
+    size_t mpub_datalen = 0;
+    size_t user_datalen = 0;
+
+    uint8_t *data = NULL;
+    uint8_t *key_data = NULL;
+
+    int idlen = 0;
+    int datalen = 0;
+    int keylen = 0;
+
+    while ((opt = getopt_long(argc,argv,"a:i:+:?:-:=:ugh", long_options, NULL)) != -1) {
         switch (opt) {
-            case 's':
-                if(optarg){
+            case 'u':
+                up_flag = 1;
+                break;
+
+            case 'g':
+                gen_flag = 1;
+                break;
+
+            case 'a':
+                if( strcmp(optarg,"sign") == 0 ){
                     s_flag = 1;
-                    //import ks from file
-                    ifile = (char *)malloc(strlen(optarg) * sizeof(char));
-				    strcpy((char *)ifile, optarg);
-                    if (ifile == NULL) {
-                        printf("Error: failed to allocate memory for inputfile.\n");
-                        return 1;
-                    }
-                    result = read_file(ifile,&msk_data,&msk_datalen);
-				    if(result == 0){
-					    printf("FILE READING ERROR\n");
-					    exit(1);
-                    }
-				}
-                else{
-                    //rand a ks
-                    s_flag = 2;
                 }
-                break;
-            case 'e':
-                if(optarg){
-                    //import ke from file
+                else if( strcmp(optarg,"enc") == 0 ){
                     e_flag = 1;
-                    ifile = (char *)malloc(strlen(optarg) * sizeof(char));
-				    strcpy((char *)ifile, optarg);
-                    if (ifile == NULL) {
-                        printf("Error: failed to allocate memory for inputfile.\n");
-                        return 1;
-                    }
-                    result = read_file(ifile,&msk_data,&msk_datalen);
-				    if(result == 0){
-					    printf("FILE READING ERROR\n");
-					    exit(1);
-                    }
-                }
-                else{
-                    //rand a ke
-                    e_flag = 2;
                 }
                 break;
+
             case 'i':
                 idlen = strlen(optarg);
                 id = (char *)malloc(idlen * sizeof(char));
@@ -192,8 +190,35 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 break;
+
+            case '+':
+                ifile = (char *)malloc(strlen(optarg) * sizeof(char));
+				strcpy((char *)ifile, optarg);
+                if (ifile == NULL) {
+                    printf("Error: failed to allocate memory for master-key.\n");
+                    return 1;
+                }
+                result = read_file(ifile,&data,&datalen);
+				if(result == 0){
+					printf("FILE READING ERROR\n");
+					exit(1);
+				}
+                break;
+            case '?':
+                in_key = (char *)malloc(strlen(optarg) * sizeof(char));
+				strcpy((char *)in_key, optarg);
+                if (in_key == NULL) {
+                    printf("Error: failed to allocate memory for master-key.\n");
+                    return 1;
+                }
+                result = read_file(in_key,&key_data,&keylen);
+				if(result == 0){
+					printf("FILE READING ERROR\n");
+					exit(1);
+				}
+                break;
+
             case '-':
-                msk_flag = 1;
                 ofile = (char *)malloc(strlen(optarg) * sizeof(char));
 				strcpy((char *)ofile, optarg);
                 if (ofile == NULL) {
@@ -201,82 +226,92 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 break;
-            case '+':
-                usk_flag = 1;
-                usrsk = (char *)malloc(strlen(optarg) * sizeof(char));
-				strcpy((char *)usrsk, optarg);
-                if (usrsk == NULL) {
-                    printf("Error: failed to allocate memory for user-key.\n");
+            case '=':
+                out_key = (char *)malloc(strlen(optarg) * sizeof(char));
+				strcpy((char *)out_key, optarg);
+                if (out_key == NULL) {
+                    printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
                 break;
-            case 'h':
-                print_usage(argv[0]);
-                return 0;
-            default:
-                print_usage(argv[0]);
-                return 1;
         }
     }
-
-    if(e_flag != 0 && s_flag != 0 ){
-        fprintf(stderr, "Error: --sign --enc are mutually exclusive options.\n");
+    if( up_flag + gen_flag != 1 ){
+        fprintf(stderr, "Error: You must and can only choose one of these parameters : --setup | --keygen .\n");
+        exit(1);
+    }
+    if( s_flag + e_flag != 1 ){
+        fprintf(stderr, "Error: You must and can only choose one of these parameters : --alg=sign | --alg=enc .\n");
         exit(1);
     }
 
-
-    if(s_flag != 0){
+    if(up_flag == 1){
         if(s_flag == 1){
-            sign_master_key_set(&sign_master,msk_data,msk_datalen);
-        }
-        else{
-            sign_master_key_gen(&sign_master);
             msk_datalen = bn_size_bin(sign_master.ks);
             msk_data = (uint8_t *)malloc(msk_datalen * sizeof(uint8_t));
             bn_write_bin(msk_data, msk_datalen, sign_master.ks);
-            //bn_write_str(msk,bn_size_str(sign_master.ks,16),sign_master.ks,16);
-        }
-        
-        if(id != NULL){
-            sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_user);
-            //usk_datalen = 64;
-            ep_print(sign_user.ds);
-            ep_write_bin(usk_data,usk_datalen+1,sign_user.ds,0);
-        }
-    }
-    else if(e_flag!=0){
-        if(e_flag == 1){
-            enc_master_key_set(&enc_master,msk_data);
+
+            write_file(out_key,msk_data,msk_datalen);
+
+            if(ofile != NULL){
+                mpub_datalen = ep2_size_bin(sign_master.Ppubs,0);
+                mpub_data = (uint8_t *)malloc(mpub_datalen * sizeof(uint8_t));
+                ep2_write_bin(mpub_data,mpub_datalen,sign_master.Ppubs,0);
+                write_file(ofile,mpub_data,mpub_datalen);
+            }
         }
         else{
-            enc_master_key_gen(&enc_master);
             msk_datalen = bn_size_bin(enc_master.ke);
             msk_data = (uint8_t *)malloc(msk_datalen * sizeof(uint8_t));
             bn_write_bin(msk_data,msk_datalen,enc_master.ke);
+
+            write_file(out_key,msk_data,msk_datalen);
+
+            if(ofile != NULL){
+                mpub_datalen = ep_size_bin(enc_master.Ppube,0);
+                mpub_data = (uint8_t *)malloc(mpub_datalen * sizeof(uint8_t));
+                ep_write_bin(mpub_data,mpub_datalen,enc_master.Ppube,0);
+                write_file(ofile,mpub_data,mpub_datalen);
+            }
+        }
+    }
+    else if(gen_flag == 1){
+        if( s_flag == 1 ){
+            sign_master_key_set(&sign_master,key_data,keylen);
+            sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_user);
+            user_datalen = ep2_size_bin(sign_user.Ppubs,0);
+            user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
+            ep2_write_bin(sign_user.Ppubs,user_data,user_datalen,0);
+
+            write_file(out_key,user_data,user_datalen);
+
+        }
+        else{
+            enc_master_key_set(&enc_master,key_data,keylen);
+            sm9_enc_master_key_extract_key(&enc_master, (char *)id, idlen, &enc_user);
+            user_datalen = ep_size_bin(enc_user.Ppube,0);
+            user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
+            ep_write_bin(enc_user.Ppube,user_data,user_datalen,0);
+
+            write_file(out_key,user_data,user_datalen);
         }
     }
 
-    bn_print(sign_master.ks);
-    
-    if(msk_flag == 1 ){
-        write_file(ofile,msk_data,msk_datalen);
-        if(s_flag == 1 || e_flag == 1){
-            printf("NOTICE: The Contents in %s and %s are the same.\n",ifile,ofile);
-        }
-    }
-
-    if(usk_flag == 1){
-        write_file(usrsk,usk_data,usk_datalen);
-    }
 
     sign_master_key_free(&sign_master);
     enc_master_key_free(&enc_master);
     sign_user_key_free(&sign_user);
     enc_user_key_free(&enc_user);
     free(msk_data);
+    free(mpub_data);
+    free(user_data);
+    free(data);
+    free(key_data);
     free(id);
     free(ifile);
+    free(in_key);
     free(ofile);
-    free(usrsk);
+    free(out_key);
+    
     return 0;
 }
