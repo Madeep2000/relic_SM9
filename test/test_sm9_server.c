@@ -57,14 +57,16 @@ void print_usage(char *program_name) {
     printf("--setup:                   Setup one pair of master public key and private key\n");
     printf("--alg=value                Specify the algorathm in value ( sign | enc )\n");
     printf("[--outfile=dir1]           Store the new master public key at dir1\n");
-    printf("--outkey=dir2              Store the new master private key at dir2\n\n");
+    printf("--outkey=dir2              Store the new master private key at dir2\n");
+    printf("[-t]                       Print out these keys in text form.\n\n");
 
     printf("--keygen:                  Generate user's private key using user's id\n");
-    printf("--alg=value1               Specify the algorathm in value ( sign | enc )");
+    printf("--alg=value1               Specify the algorathm in value ( sign | enc )\n");
     printf("--user-id=value2           Specify user's id as user's public key\n");
-    printf("[--infile=dir1]            Specify master public key at dir1\n");
-    printf("--inkey=dir2               Specify master private key at dir2\n");
-    printf("--outkey=dir3              Store user's private key in dir3\n\n");
+    printf("[--infile=dir1]            Specify master public key in dir1\n");
+    printf("--inkey=dir2               Specify master private key in dir2\n");
+    printf("--outkey=dir3              Store user's private key at dir3\n");
+    printf("[-t]                       Print out user's private key in text form.\n\n");
 	printf("EXAMPLE1: %s --setup --alg=sign --outfile=masterpub.bin --outkey=masterkey.bin\n",program_name);
     printf("EXAMPLE2: %s --keygen --alg=enc --user-id=Alice --inkey=masterkey.bin --outkey=alicekey.abc\n\n",program_name);
     printf("-h                         Print this help message and exit\n");
@@ -107,10 +109,11 @@ int main(int argc, char *argv[]) {
     SM9_SIGN_KEY sign_user;
     SM9_ENC_KEY enc_user;
 
+    
     //sign_master_key_init(&sign_master);
-    sign_master_key_gen(sign_master);
+    sign_master_key_gen(&sign_master);      // rand key
     //enc_master_key_init(&enc_master);
-    enc_master_key_gen(&enc_master);
+    enc_master_key_gen(&enc_master);        // rand key
 
     //just allocate memory
     sign_user_key_init(&sign_user);
@@ -121,25 +124,14 @@ int main(int argc, char *argv[]) {
     bn_new(N);
     bn_read_str(N,SM9_N,strlen(SM9_N),16);
 	bn_sub_dig(N,N,1);
-
-    struct option long_options[] = {
-        {"setup", no_argument, NULL, 'u'},
-        {"keygen", no_argument, NULL, 'g'},
-        {"alg",required_argument, NULL, 'a'},
-        {"user-id",required_argument, NULL, 'i'},
-        {"infile",optional_argument,NULL,'+'},
-        {"inkey",required_argument,NULL,'?'},
-        {"outfile",optional_argument,NULL,'-'},
-        {"outkey",required_argument,NULL,'='},
-        {"help",no_argument,NULL,'h'},
-        {0, 0, 0, 0}
-    };
+    
     int opt;
     int result = 0;
     int up_flag = 0;
     int gen_flag = 0;
     int s_flag = 0;
     int e_flag = 0; 
+    int t_flag = 0;
 
     char *ifile = NULL;
     char *in_key = NULL;
@@ -162,7 +154,21 @@ int main(int argc, char *argv[]) {
     int datalen = 0;
     int keylen = 0;
 
-    while ((opt = getopt_long(argc,argv,"a:i:+:?:-:=:ugh", long_options, NULL)) != -1) {
+    struct option long_options[] = {
+        {"setup", no_argument, NULL, 'u'},
+        {"keygen", no_argument, NULL, 'g'},
+        {"alg",required_argument, NULL, 'a'},
+        {"user-id",required_argument, NULL, 'i'},
+        {"infile",required_argument,NULL,'+'},
+        {"inkey",required_argument,NULL,'?'},
+        {"outfile",required_argument,NULL,'-'},
+        {"outkey",required_argument,NULL,'!'},
+        {"help",no_argument,NULL, 'h'},
+        {"text",no_argument,NULL, 't'},
+        {0, 0, 0, 0}
+    };
+
+    while ((opt = getopt_long(argc,argv,"a:i:+:?:-:!:ught", long_options, NULL)) != -1) {
         switch (opt) {
             case 'u':
                 up_flag = 1;
@@ -175,9 +181,11 @@ int main(int argc, char *argv[]) {
             case 'a':
                 if( strcmp(optarg,"sign") == 0 ){
                     s_flag = 1;
+                    printf("Algorithm : sign\n");
                 }
                 else if( strcmp(optarg,"enc") == 0 ){
                     e_flag = 1;
+                    printf("Algorithm : enc\n");
                 }
                 break;
 
@@ -226,7 +234,7 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 break;
-            case '=':
+            case '!':
                 out_key = (char *)malloc(strlen(optarg) * sizeof(char));
 				strcpy((char *)out_key, optarg);
                 if (out_key == NULL) {
@@ -234,8 +242,18 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 break;
+            case 't':
+                t_flag = 1;
+                break;
+            case 'h':
+                print_usage(argv[0]);
+                return 0;
+            default:
+                print_usage(argv[0]);
+                return 1;
         }
     }
+    
     if( up_flag + gen_flag != 1 ){
         fprintf(stderr, "Error: You must and can only choose one of these parameters : --setup | --keygen .\n");
         exit(1);
@@ -244,28 +262,38 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: You must and can only choose one of these parameters : --alg=sign | --alg=enc .\n");
         exit(1);
     }
-
     if(up_flag == 1){
+        printf("Mod:setup\n");
         if(s_flag == 1){
             msk_datalen = bn_size_bin(sign_master.ks);
             msk_data = (uint8_t *)malloc(msk_datalen * sizeof(uint8_t));
             bn_write_bin(msk_data, msk_datalen, sign_master.ks);
-
             write_file(out_key,msk_data,msk_datalen);
-
+            if(t_flag == 1){
+                printf("signature master public key is:\n");
+                ep2_print(sign_master.Ppubs);
+                printf("signature master private key is:\n");
+                bn_print(sign_master.ks);
+            }
             if(ofile != NULL){
                 mpub_datalen = ep2_size_bin(sign_master.Ppubs,0);
                 mpub_data = (uint8_t *)malloc(mpub_datalen * sizeof(uint8_t));
                 ep2_write_bin(mpub_data,mpub_datalen,sign_master.Ppubs,0);
                 write_file(ofile,mpub_data,mpub_datalen);
             }
-        }
-        else{
+
+        }else{
             msk_datalen = bn_size_bin(enc_master.ke);
             msk_data = (uint8_t *)malloc(msk_datalen * sizeof(uint8_t));
             bn_write_bin(msk_data,msk_datalen,enc_master.ke);
 
             write_file(out_key,msk_data,msk_datalen);
+            if( t_flag == 1){
+                printf("encrypt master public key is:\n");
+                ep_print(enc_master.Ppube);
+                printf("encrypt master private key is:\n");
+                bn_print(enc_master.ke);
+            }
 
             if(ofile != NULL){
                 mpub_datalen = ep_size_bin(enc_master.Ppube,0);
@@ -274,28 +302,39 @@ int main(int argc, char *argv[]) {
                 write_file(ofile,mpub_data,mpub_datalen);
             }
         }
-    }
-    else if(gen_flag == 1){
+    }else if(gen_flag == 1){
+        printf("Mod:keygen\n");
         if( s_flag == 1 ){
             sign_master_key_set(&sign_master,key_data,keylen);
             sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_user);
-            user_datalen = ep2_size_bin(sign_user.Ppubs,0);
+            ep_print(sign_user.ds);
+            user_datalen = ep_size_bin(sign_user.ds,0);
             user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
-            ep2_write_bin(sign_user.Ppubs,user_data,user_datalen,0);
+            ep_write_bin(user_data,user_datalen,sign_user.ds,0);
 
             write_file(out_key,user_data,user_datalen);
+
+            if(t_flag == 1){
+                printf("signature user private key:\n");
+                ep_print(sign_user.ds);
+            }
 
         }
         else{
             enc_master_key_set(&enc_master,key_data,keylen);
             sm9_enc_master_key_extract_key(&enc_master, (char *)id, idlen, &enc_user);
-            user_datalen = ep_size_bin(enc_user.Ppube,0);
+            user_datalen = ep2_size_bin(enc_user.de,0);
             user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
-            ep_write_bin(enc_user.Ppube,user_data,user_datalen,0);
+            ep2_write_bin(user_data,user_datalen,enc_user.de,0);
 
             write_file(out_key,user_data,user_datalen);
+            if(t_flag == 1){
+                printf("encrypt user private key:\n");
+                ep2_print(enc_user.de);
+            }
         }
     }
+
 
 
     sign_master_key_free(&sign_master);
@@ -311,7 +350,7 @@ int main(int argc, char *argv[]) {
     free(ifile);
     free(in_key);
     free(ofile);
-    free(out_key);
+   // free(out_key);
     
     return 0;
 }

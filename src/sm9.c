@@ -157,13 +157,26 @@ void sign_master_key_read(SM9_SIGN_MASTER_KEY *key,char ks[],int kslen,int radix
 
 //random ks
 void sign_master_key_gen(SM9_SIGN_MASTER_KEY *key){
+	
+	
 	bn_null(key->ks);
 	bn_new(key->ks);
 	ep2_null(key->Ppubs);
 	ep2_new(key->Ppubs);
 
+	bn_t N;
+    bn_null(N);
+    bn_new(N);
+    bn_read_str(N,SM9_N,strlen(SM9_N),16);
+	bn_sub_dig(N,N,1);
+
 	bn_rand(key->ks,RLC_POS,256);
+	while((bn_cmp_dig(key->ks,1) == -1) || (bn_cmp(key->ks,N) == 1)){
+		bn_rand(key->ks,RLC_POS,256);
+	}
 	ep2_mul_gen(key->Ppubs,key->ks);
+
+	bn_free(N);
 	return;
 
 }
@@ -248,7 +261,17 @@ void enc_master_key_gen(SM9_ENC_MASTER_KEY *tem){
 	bn_new(tem->ke);
 	ep_null(tem->Ppube);
 	ep_new(tem->Ppube);
+
+	bn_t N;
+    bn_null(N);
+    bn_new(N);
+    bn_read_str(N,SM9_N,strlen(SM9_N),16);
+	bn_sub_dig(N,N,1);
+
 	bn_rand(tem->ke,RLC_POS,256);
+	while((bn_cmp_dig(tem->ke,1) == -1) || (bn_cmp(tem->ke,N) == 1)){
+		bn_rand(tem->ke,RLC_POS,256);
+	}
 	ep_mul_gen(tem->Ppube,tem->ke);
 	return;
 }
