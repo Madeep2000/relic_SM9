@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for plaintext.\n");
                     return 1;
                 }
-				result = read_file(ifile,&data,&datalen);
+				result = read_file(&data,&datalen,ifile);
 				if(result == 0){
 					printf("FILE READING ERROR\n");
 					exit(1);

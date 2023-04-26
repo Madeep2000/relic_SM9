@@ -284,7 +284,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(in_K,&K_data,&Klen);
+                result = read_file(&K_data,&Klen,in_K);
 				if(result == 0){
 					printf("KEY FILE READING ERROR\n");
 					exit(1);
@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(in_key,&key_data,&keylen);
+                result = read_file(&key_data,&keylen,in_key);
 				if(result == 0){
 					printf("KEY FILE READING ERROR\n");
 					exit(1);
@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(in_pub,&pub_data,&publen);
+                result = read_file(&pub_data,&publen,in_pub);
 				if(result == 0){
 					printf("PUB FILE READING ERROR\n");
 					exit(1);
@@ -323,7 +323,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(in_sig,&sig_data,&siglen);
+                result = read_file(&sig_data,&siglen,in_sig);
 				if(result == 0){
 					printf("SIGN FILE READING ERROR\n");
 					exit(1);
@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(ifile,&data,&datalen);
+                result = read_file(&data,&datalen,ifile);
 				if(result == 0){
 					printf("FILE READING ERROR\n");
 					exit(1);

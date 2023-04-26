@@ -124,6 +124,14 @@ int main(int argc, char *argv[]) {
     bn_new(N);
     bn_read_str(N,SM9_N,strlen(SM9_N),16);
 	bn_sub_dig(N,N,1);
+
+    ep_t tmp;
+    ep_null(tmp);
+    ep_new(tmp);
+
+    ep2_t temp; 
+    ep2_null(temp);
+    ep2_new(temp); 
     
     int opt;
     int result = 0;
@@ -147,11 +155,11 @@ int main(int argc, char *argv[]) {
     size_t mpub_datalen = 0;
     size_t user_datalen = 0;
 
-    uint8_t *data = NULL;
+    uint8_t pub_data[129];      // sign master pubkey need 129 | enc master pubkey need 65
     uint8_t *key_data = NULL;
 
     int idlen = 0;
-    int datalen = 0;
+    int publen = 0;            // 129 or 65
     int keylen = 0;
 
     struct option long_options[] = {
@@ -181,10 +189,12 @@ int main(int argc, char *argv[]) {
             case 'a':
                 if( strcmp(optarg,"sign") == 0 ){
                     s_flag = 1;
+                    publen = 129;
                     printf("Algorithm : sign\n");
                 }
                 else if( strcmp(optarg,"enc") == 0 ){
                     e_flag = 1;
+                    publen = 65;
                     printf("Algorithm : enc\n");
                 }
                 break;
@@ -206,12 +216,13 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(ifile,&data,&datalen);
+                result = read_file_t(pub_data,publen,ifile);
 				if(result == 0){
 					printf("FILE READING ERROR\n");
 					exit(1);
 				}
                 break;
+
             case '?':
                 in_key = (char *)malloc(strlen(optarg) * sizeof(char));
 				strcpy((char *)in_key, optarg);
@@ -219,7 +230,7 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                result = read_file(in_key,&key_data,&keylen);
+                result = read_file(&key_data,&keylen,in_key);
 				if(result == 0){
 					printf("FILE READING ERROR\n");
 					exit(1);
@@ -234,6 +245,7 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 break;
+
             case '!':
                 out_key = (char *)malloc(strlen(optarg) * sizeof(char));
 				strcpy((char *)out_key, optarg);
@@ -262,8 +274,14 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: You must and can only choose one of these parameters : --alg=sign | --alg=enc .\n");
         exit(1);
     }
+
+
     if(up_flag == 1){
-        printf("Mod:setup\n");
+        if(out_key == NULL){
+            fprintf(stderr, "Error: directory of --outkey needed .\n");
+            return 0;
+        }
+        printf("Mod : setup\n");
         if(s_flag == 1){
             msk_datalen = bn_size_bin(sign_master.ks);
             msk_data = (uint8_t *)malloc(msk_datalen * sizeof(uint8_t));
@@ -303,9 +321,14 @@ int main(int argc, char *argv[]) {
             }
         }
     }else if(gen_flag == 1){
-        printf("Mod:keygen\n");
+        if(id == NULL || out_key == NULL || in_key == NULL){
+            fprintf(stderr, "Error: value of --user-id , directory of --inkey and --outkey needed .\n");
+            return 0;
+        }
+        printf("Mod : keygen\n");
         if( s_flag == 1 ){
             sign_master_key_set(&sign_master,key_data,keylen);
+            
             sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_user);
             ep_print(sign_user.ds);
             user_datalen = ep_size_bin(sign_user.ds,0);
@@ -326,8 +349,14 @@ int main(int argc, char *argv[]) {
             user_datalen = ep2_size_bin(enc_user.de,0);
             user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
             ep2_write_bin(user_data,user_datalen,enc_user.de,0);
-
             write_file(out_key,user_data,user_datalen);
+            if(ifile != NULL){
+                ep_read_bin(tmp,pub_data,publen);
+                if( ep_cmp(tmp,enc_master.Ppube) != 0 ){
+                    printf("ERROR: FILE %s (which is master pubkey) and FILE %s (which is master prikey) do not match\n",ifile,in_key);
+                    return -1;
+                }
+            }
             if(t_flag == 1){
                 printf("encrypt user private key:\n");
                 ep2_print(enc_user.de);
@@ -335,22 +364,23 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
-
     sign_master_key_free(&sign_master);
     enc_master_key_free(&enc_master);
     sign_user_key_free(&sign_user);
     enc_user_key_free(&enc_user);
+
     free(msk_data);
     free(mpub_data);
     free(user_data);
-    free(data);
     free(key_data);
     free(id);
     free(ifile);
     free(in_key);
     free(ofile);
-   // free(out_key);
-    
+    free(out_key);
+    ep_free(tmp);
+    ep2_free(temp);
+
+    core_clean();
     return 0;
 }

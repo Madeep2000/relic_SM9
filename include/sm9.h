@@ -90,7 +90,7 @@ typedef struct {
 void sm9_init();
 void sm9_clean();
 int write_file(char filename[],uint8_t output[],int output_size);
-int read_file(char filename[], uint8_t **output, size_t *output_size);
+int read_file(uint8_t **output, size_t *output_size,char filename[]);
 //void master_key_init(SM9_SIGN_MASTER_KEY key);
 //void master_key_free(SM9_SIGN_MASTER_KEY key);
 //void user_key_init(SM9_SIGN_KEY key);

@@ -79,7 +79,8 @@ void sm9_clean(){
 }
 
 //把filename文件的内容读到output里面
-int read_file(char filename[], uint8_t **output, size_t *output_size) {
+//FIX ME
+int read_file(uint8_t **output, size_t *output_size,char filename[]) {
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
         printf("FILE OPEN ERROR\n");
@@ -102,6 +103,22 @@ int read_file(char filename[], uint8_t **output, size_t *output_size) {
     return 1;
 }
 
+int read_file_t(uint8_t output[],int output_size,char filename[]){
+	FILE *fp = fopen(filename, "rb");
+    if (fp == NULL) {
+        printf("FILE OPEN ERROR\n");
+        return 0;
+    }
+	size_t n_read = fread(output,sizeof(uint8_t),output_size,fp);
+	if (n_read != output_size) {
+        printf("Error: failed to read file\n");
+        fclose(fp);
+        return 0;
+    }
+	fclose(fp);
+	return 1;
+}
+
 //把output的内容写到filename文件里面
 int write_file(char filename[],uint8_t output[],int output_size){
 
@@ -110,7 +127,12 @@ int write_file(char filename[],uint8_t output[],int output_size){
 		printf("FILE OPEN ERROR!");
 		return 0;
 	}
-	fwrite(output,sizeof(uint8_t),output_size,fp);
+	size_t n_write = fwrite(output,sizeof(uint8_t),output_size,fp);
+	if (n_write != output_size) {
+        printf("Error: failed to write file\n");
+        fclose(fp);
+        return 0;
+    }
  	fclose(fp);
 	return 1;
 
@@ -279,6 +301,7 @@ void enc_master_key_gen(SM9_ENC_MASTER_KEY *tem){
 void enc_master_key_free(SM9_ENC_MASTER_KEY *tem){
 	bn_free(tem->ke);
 	ep_free(tem->Ppube);
+	return ;
 }
 
 static void fp_to_bn(sm9_bn_t a, fp_t b){
