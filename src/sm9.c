@@ -103,6 +103,7 @@ int read_file(uint8_t **output, size_t *output_size,char filename[]) {
     return 1;
 }
 
+// replace read_file
 int read_file_t(uint8_t output[],int output_size,char filename[]){
 	FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {

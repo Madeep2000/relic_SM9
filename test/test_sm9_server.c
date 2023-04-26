@@ -69,7 +69,7 @@ void print_usage(char *program_name) {
     printf("[-t]                       Print out user's private key in text form.\n\n");
 	printf("EXAMPLE1: %s --setup --alg=sign --outfile=masterpub.bin --outkey=masterkey.bin\n",program_name);
     printf("EXAMPLE2: %s --keygen --alg=enc --user-id=Alice --inkey=masterkey.bin --outkey=alicekey.abc\n\n",program_name);
-    printf("-h                         Print this help message and exit\n");
+    printf("-h                         Print this help message and exit\n\n");
 }
 
 /*
@@ -328,7 +328,13 @@ int main(int argc, char *argv[]) {
         printf("Mod : keygen\n");
         if( s_flag == 1 ){
             sign_master_key_set(&sign_master,key_data,keylen);
-            
+            if(ifile != NULL){
+                ep2_read_bin(temp,pub_data,publen);
+                if( ep2_cmp(temp,sign_master.Ppubs) != 0 ){
+                    printf("ERROR: FILE %s (which is master pubkey) and FILE %s (which is master prikey) do not match\n",ifile,in_key);
+                    return -1;
+                }
+            }
             sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_user);
             ep_print(sign_user.ds);
             user_datalen = ep_size_bin(sign_user.ds,0);
@@ -345,11 +351,6 @@ int main(int argc, char *argv[]) {
         }
         else{
             enc_master_key_set(&enc_master,key_data,keylen);
-            sm9_enc_master_key_extract_key(&enc_master, (char *)id, idlen, &enc_user);
-            user_datalen = ep2_size_bin(enc_user.de,0);
-            user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
-            ep2_write_bin(user_data,user_datalen,enc_user.de,0);
-            write_file(out_key,user_data,user_datalen);
             if(ifile != NULL){
                 ep_read_bin(tmp,pub_data,publen);
                 if( ep_cmp(tmp,enc_master.Ppube) != 0 ){
@@ -357,6 +358,11 @@ int main(int argc, char *argv[]) {
                     return -1;
                 }
             }
+            sm9_enc_master_key_extract_key(&enc_master, (char *)id, idlen, &enc_user);
+            user_datalen = ep2_size_bin(enc_user.de,0);
+            user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
+            ep2_write_bin(user_data,user_datalen,enc_user.de,0);
+            write_file(out_key,user_data,user_datalen);
             if(t_flag == 1){
                 printf("encrypt user private key:\n");
                 ep2_print(enc_user.de);
