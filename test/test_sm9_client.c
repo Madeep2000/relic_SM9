@@ -106,10 +106,10 @@ void print_usage(char *program_name) {
     printf("--outfile=dir7           Specify the output file as user's hash option in dir7.\n");
 
 	printf("\nEXAMPLE1: %s --sign --inpub=pub.bin --inkey=Alicekey.bin --infile=message.bin --outfile=sig.bin\n",program_name);
-    printf("EXAMPLE2: %s --verify --user-id=Alice --inpub=pub.bin --infile=message.bin --insig=sig.bin\n",program_name);
-    printf("EXAMPLE3: %s --kem --user-id=Bob --inpub=pub.bin --outkey=key.bin --outfile=cip.bin\n",program_name);
-    printf("EXAMPLE4: %s --kdm --user-id=Bob --inkey=key.bin --infile=cipher.bin --outkey=key.bin\n",program_name);
-    printf("EXAMPLE5: %s --enc --user-id=Bob --inpub=pub.bin --infile=message.bin --outfile=cipher.bin\n",program_name);
+    printf("EXAMPLE2: %s --verify --user-id=Alice --inpub=masterpub.bin --infile=message.bin --insig=sig.bin\n",program_name);
+    printf("EXAMPLE3: %s --kem --user-id=Bob --inpub=masterpub.bin --outkey=sessionkey.bin --outfile=cip.bin\n",program_name);
+    printf("EXAMPLE4: %s --kdm --user-id=Bob --inkey=bobkey.bin --infile=cip.bin --inKEY=sessionkey.bin --outkey=key.bin\n",program_name);
+    printf("EXAMPLE5: %s --enc --user-id=Bob --inpub=masterpub.bin --infile=message.bin --outfile=cipher.bin\n",program_name);
     printf("EXAMPLE6: %s --dec --user-id=Bob --inkey=key.bin --infile=cipher.bin --outfile=message.bin\n",program_name);
     
     printf("\n-h                     Print this help message and exit\n\n");
@@ -337,14 +337,9 @@ int main(int argc, char *argv[]) {
                     printf("Error: failed to allocate memory for master-key.\n");
                     return 1;
                 }
-                if(m_flag == 1){
-                    printf("kdm now\n");
-                    result = read_file_t(buf,datalen,ifile);
-                    print_bytes(buf,datalen);
-                }
-                else{
-                    result = read_file(&data,&datalen,ifile);
-                }
+                printf("kdm now\n");
+                result = read_file(&data,&datalen,ifile);
+                print_bytes(data,datalen);
 				if(result == 0){
 					printf("FILE READING ERROR\n");
 					exit(1);
@@ -399,7 +394,7 @@ int main(int argc, char *argv[]) {
 
         }
     }
-    printf("cip is:");
+    printf("cip is:\n");
     print_bytes(data,datalen);
 
     fp12_t g1,g2,g3;
@@ -477,7 +472,7 @@ int main(int argc, char *argv[]) {
         printf("\nKlen%d\n",Klen);
         format_bytes(stdout, 0, 0, "private keydata", key_data, keylen);
         ep2_read_bin(enc_user.de,key_data,keylen);
-        ep_read_bin(C,buf,datalen);
+        ep_read_bin(C,data,datalen);
         
         sm9_kem_decrypt(&enc_user,(char *)user_id, idlen,C,Klen,K_data);
         if(out_key != NULL){
