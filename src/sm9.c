@@ -4620,7 +4620,6 @@ int sm9_signature_from_der(SM9_SIGNATURE *sig, const uint8_t **in, size_t *inlen
 		error_print();
 		return -1;
 	}
-	printf("Slen is%d\n",Slen);
 	bn_read_bin(sig->h,h,hlen);
 	ep_read_bin(sig->S,S,Slen);
 
@@ -4696,10 +4695,9 @@ int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
 	gmssl_secure_clear(wbuf, sizeof(wbuf));
 	gmssl_secure_clear(fubw, sizeof(fubw));
 	gmssl_secure_clear(&kdf_ctx, sizeof(kdf_ctx));
-	printf("\nK is :\n");
+
 	//when using kem, klen = klen - datalen(20)
-	print_bytes(kbuf,klen);
-	printf("klen is:%d\n",klen);
+
 	// A7: output (K, C)
 	return 1;
 }
@@ -5014,8 +5012,6 @@ int sm9_exchange_B1(const SM9_ENC_KEY *usr,fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t
 	sm3_update(&sb_ctx, g1_real,sizeof(g1_real));
 	sm3_update(&sb_ctx, sb,sblen);
 	sm3_finish(&sb_ctx, sb);
-	printf("S_B is:\n");
-	print_bytes(sb,32);
 
 	ep_free(tmp);
 	g2_free(gen2);
@@ -5057,8 +5053,6 @@ int sm9_exchange_A2_without_check(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra
 	uint8_t Rbbuf[65];
 	uint8_t Rabuf[65];
 	uint8_t dgst[32];
-
-	uint8_t eighty_two_and_three[2] = {0x82,0x83};
 
 	//sm9_pairing_fastest(g_1,gen2,usr->Ppube);
 	//fp12_pow_t(g_1,g_1,ra);
@@ -5186,15 +5180,13 @@ int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *i
 	sm3_update(&sa_ctx, g1_real,sizeof(g1_real));
 	sm3_update(&sa_ctx, dgst,sizeof(dgst));
 	sm3_finish(&sa_ctx, sa);
-	printf("S_A is:\n");
-	print_bytes(sa,32);
 
 	sm3_init(&sa_ctx);
 	sm3_update(&sa_ctx, eighty_two_and_three,sizeof(eighty_two_and_three)/2);
 	sm3_update(&sa_ctx, g1_real,sizeof(g1_real));
 	sm3_update(&sa_ctx, dgst,sizeof(dgst));
 	sm3_finish(&sa_ctx, dgst);
-	print_bytes(dgst,32);
+
 	if(memcmp(dgst,data,32) != 0){
 		printf("ERROR:key exchange fail!\n");
 		return -1;
@@ -5209,8 +5201,8 @@ int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *i
 	sm3_kdf_update(&kdf_ctx, g2_real,sizeof(g2_real));
 	sm3_kdf_update(&kdf_ctx, g3_real,sizeof(g3_real));
 	sm3_kdf_finish(&kdf_ctx, kbuf);
-	printf("session key is:\n");
-	print_bytes(kbuf,klen);
+	//printf("session key is:\n");
+	//print_bytes(kbuf,klen);
 
 	fp12_free(g_1);
 	fp12_free(g_2);
@@ -5265,13 +5257,13 @@ int sm9_exchange_B2(fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char 
 	sm3_update(&sb_ctx, g1_real,sizeof(g1_real));
 	sm3_update(&sb_ctx, dgst,sizeof(dgst));
 	sm3_finish(&sb_ctx, dgst);
-	print_bytes(dgst,32);
+
 	if(memcmp(dgst,data,32) != 0){
 		printf("ERROR:key exchange fail!\n");
 		return -1;
 	}
 	else{
-		printf("key exchange sussess!\n");
+		//printf("key exchange sussess!\n");
 	}
 	return 1;
 }
@@ -5626,10 +5618,264 @@ int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,
 		error_print();
 		return -1;
 	}
-	printf("\nsignature.h2 is :\n");
-	bn_print(signature.h);
+	//printf("\nsignature.h2 is :\n");
+	//bn_print(signature.h);
 	bn_free(signature.h);
 	ep_free(signature.S);
 	return ret;
 }
 
+//----------------------------speed test modules-------------------
+
+int speedtest_sm9_sign_verify(){
+	const char *id = "Alice";
+	// data = "Chinese IBS standard"
+	uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x53, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
+	int idlen = 5;
+	int datalen = 20;
+	int j = 1;
+	
+	SM9_SIGN_KEY sign_key;
+	SM9_SIGN_MASTER_KEY sign_master;
+
+	sign_user_key_init(&sign_key);
+	sign_master_key_init(&sign_master);
+
+	SM9_SIGN_CTX ctx;
+	//const char *id = "Alice";
+
+	uint8_t sig[104];
+	size_t siglen;
+		
+	sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_key);
+	sm9_sign_init(&ctx);
+	sm9_sign_update(&ctx,data, datalen);
+	PERFORMANCE_TEST_NEW("RELIC SM9_signature ",sm9_sign_finish(&ctx, &sign_key, sig, &siglen));
+	//sm9_sign_finish(&ctx, &sign_key, sig, &siglen);
+	//format_bytes(stdout, 0, 0, "signature", sig, siglen);
+
+	sm9_verify_init(&ctx);
+	sm9_verify_update(&ctx, data, datalen);
+	//if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
+	PERFORMANCE_TEST_NEW("RELIC SM9_verification ",sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen));
+	//format_bytes(stdout, 0, 0, "\nverified signature", sig, siglen);
+	//write_file("output.txt",sig,siglen);
+
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
+
+	return 1;
+err:
+	printf("%s test %d failed\n", __FUNCTION__, j);
+	sign_master_key_free(&sign_master);
+	sign_user_key_free(&sign_key);
+	error_print();
+	return -1;
+}
+
+
+int speedtest_sm9_exchange() {
+
+	SM9_ENC_MASTER_KEY msk;
+	SM9_ENC_KEY alice_key;
+    SM9_ENC_KEY bob_key;
+
+    ep_t Ra;
+    ep_null(Ra);
+    ep_new(Ra);
+    ep_t Rb;
+    ep_null(Rb);
+    ep_new(Rb);
+
+    bn_t ra;
+    bn_null(ra);
+    bn_new(ra);
+
+    fp12_t g1,g2,g3;
+    fp12_null(g1);
+	fp12_new(g1);
+	fp12_null(g3);
+	fp12_new(g3);
+	fp12_null(g2);
+	fp12_new(g2);
+
+    char ke[] = "2E65B0762D042F51F0D23542B13ED8CFA2E9A0E7206361E013A283905E31F";
+    //enc_master_key_init(&msk);
+    enc_master_key_read(&msk,ke,strlen(ke),16);
+    enc_user_key_init(&bob_key);
+    enc_user_key_init(&alice_key);
+
+	int j = 1;
+
+    uint8_t kbuf[16] = {0};
+    uint8_t sa[32];
+    uint8_t sb[32];
+    int salen = 32;
+    int sblen = 32;
+    int klen = sizeof(kbuf);
+
+    //Alice
+    uint8_t IDA[5] = {0x41,0x6C,0x69,0x63,0x65};
+	//Bob
+	uint8_t IDB[3] = {0x42, 0x6F, 0x62};
+
+	if (sm9_exch_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &bob_key) < 0) goto err; ++j;
+	if (sm9_exch_master_key_extract_key(&msk, (char *)IDA, sizeof(IDA), &alice_key) < 0) goto err; ++j;
+
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_A1 ",sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_B1 ",sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_A2 ",sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_B2 ",sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa));
+
+	//sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra);
+    //sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
+    //sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb);
+    //sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa);
+
+    enc_master_key_free(&msk);
+    enc_user_key_free(&bob_key);
+    enc_user_key_free(&alice_key);
+    ep_free(Ra);
+    ep_free(Rb);
+    bn_free(ra);
+    fp12_free(g3);
+    fp12_free(g2);
+    fp12_free(g1);
+	return 1;
+err:
+    enc_master_key_free(&msk);
+    enc_user_key_free(&bob_key);
+    enc_user_key_free(&alice_key);
+    ep_free(Ra);
+    ep_free(Rb);
+    bn_free(ra);
+    fp12_free(g3);
+    fp12_free(g2);
+    fp12_free(g1);
+    //enc_master_key_free(&msk);
+    //enc_user_key_free(&enc_key);
+	printf("%s test %d failed\n", __FUNCTION__, j);
+	error_print();
+	return -1;
+}
+
+int speedtest_sm9_kem_kdm() {
+	SM9_ENC_MASTER_KEY msk;
+	SM9_ENC_KEY enc_key;
+
+    //enc_master_key_init(&msk);
+    //enc_user_key_init(&enc_key);
+	
+	ep_null(enc_key.Ppube);
+	ep_new(enc_key.Ppube);
+	ep2_null(enc_key.de);
+	ep2_new(enc_key.de);
+
+	ep_t C;
+	ep_null(C);
+	ep_new(C);
+
+    uint8_t out[1000] = {0};
+	size_t outlen = 0;
+	int j = 1;
+	uint8_t kbuf[287];
+	size_t klen = 32;
+	//Bob
+	uint8_t IDB[3] = {0x42, 0x6F, 0x62};
+
+	uint8_t testbuf[128];
+	int tlen = 128;
+
+	enc_master_key_init(&msk);
+
+	if (sm9_enc_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &enc_key) < 0) goto err; ++j;
+
+    PERFORMANCE_TEST_NEW("RELIC SM9_kem_encrypt ",sm9_kem_encrypt(&msk, (char *)IDB, sizeof(IDB), klen, kbuf, C) );	
+	//sm9_kem_encrypt(&msk, (char *)IDB, sizeof(IDB), klen, kbuf, C);
+
+    PERFORMANCE_TEST_NEW("RELIC SM9_kem_decrypt ",sm9_kem_decrypt(&enc_key,(char *)IDB, sizeof(IDB),C,klen,kbuf) );		
+	//sm9_kem_decrypt(&enc_key,(char *)IDB, sizeof(IDB),C,klen,kbuf);
+
+	printf("%s() ok\n", __FUNCTION__);
+	
+	ep_free(msk.Ppube);
+	bn_free(msk.ke);
+	ep_free(enc_key.Ppube);
+	ep2_free(enc_key.de);
+    //enc_master_key_free(&msk);
+    //enc_user_key_free(&enc_key);
+
+	return 1;
+err:
+	ep_free(msk.Ppube);
+	bn_free(msk.ke);
+	ep_free(enc_key.Ppube);
+	ep2_free(enc_key.de);
+
+    //enc_master_key_free(&msk);
+    //enc_user_key_free(&enc_key);
+	printf("%s test %d failed\n", __FUNCTION__, j);
+	error_print();
+	return -1;
+}
+
+
+int speedtest_sm9_enc_dec() {
+	SM9_ENC_MASTER_KEY msk;
+	SM9_ENC_KEY enc_key;
+
+    //enc_master_key_init(&msk);
+    //enc_user_key_init(&enc_key);
+	
+
+	ep_null(enc_key.Ppube);
+	ep_new(enc_key.Ppube);
+	ep2_null(enc_key.de);
+	ep2_new(enc_key.de);
+
+    uint8_t out[1000] = {0};
+	size_t outlen = 0;
+	int j = 1;
+
+	//Chinese IBE standard
+	uint8_t data[20] = {0x43, 0x68, 0x69, 0x6E, 0x65, 0x73, 0x65, 0x20, 0x49, 0x42, 0x45, 0x20, 0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64};
+	uint8_t dec[20] = {0};
+	size_t declen = 20;
+
+	//Bob
+	uint8_t IDB[3] = {0x42, 0x6F, 0x62};
+
+	enc_master_key_init(&msk);
+
+	if (sm9_enc_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &enc_key) < 0) goto err; ++j;
+	
+	//if (sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) < 0) goto err; ++j;
+	PERFORMANCE_TEST_NEW("RELIC SM9_encrypt ",sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) );
+	//format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
+    
+	PERFORMANCE_TEST_NEW("RELIC SM9_decrypt ",sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) );	
+	// if (sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) < 0) goto err; ++j;
+	if (memcmp(data, dec, sizeof(data)) != 0) goto err; ++j;
+	//format_bytes(stdout, 0, 0, "plaintext", dec, declen);
+	printf("%s() ok\n", __FUNCTION__);
+	
+	ep_free(msk.Ppube);
+	bn_free(msk.ke);
+	ep_free(enc_key.Ppube);
+	ep2_free(enc_key.de);
+    //enc_master_key_free(&msk);
+    //enc_user_key_free(&enc_key);
+
+	return 1;
+err:
+	ep_free(msk.Ppube);
+	bn_free(msk.ke);
+	ep_free(enc_key.Ppube);
+	ep2_free(enc_key.de);
+
+    //enc_master_key_free(&msk);
+    //enc_user_key_free(&enc_key);
+	printf("%s test %d failed\n", __FUNCTION__, j);
+	error_print();
+	return -1;
+}

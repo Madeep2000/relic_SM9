@@ -900,6 +900,14 @@ int str2int(char *str){
 	return ret;
 }
 
+void test_sm9_modules(){
+	speedtest_sm9_sign_verify();
+	speedtest_sm9_kem_kdm();
+	speedtest_sm9_enc_dec();
+	speedtest_sm9_exchange();
+	return ;
+}
+
 void test_other_pairing(){
 	g1_t g1;
 	ep2_t Ppub;
@@ -1091,10 +1099,11 @@ int main(int argc, char *argv[]) {
 #endif
 	// test_other_pairing();
 	//test_other_pairing_new();
-	test_a_lot();
+	//test_a_lot();
 	// test_miller();
 	//test_ep_add();
 	//test_sm9_sign_and_verify();
+	test_sm9_modules();
 	core_clean();
 
 	return 0;

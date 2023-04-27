@@ -91,14 +91,6 @@ int test_sm9_exchange() {
     sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
     sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb);
     sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa);
-/*
-	if (sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) < 0) goto err; ++j;
-	format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
-    if (sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) < 0) goto err; ++j;
-	if (memcmp(data, dec, sizeof(data)) != 0) goto err; ++j;
-	format_bytes(stdout, 0, 0, "plaintext", dec, declen);
-	printf("%s() ok\n", __FUNCTION__);
-*/
 
     enc_master_key_free(&msk);
     enc_user_key_free(&bob_key);

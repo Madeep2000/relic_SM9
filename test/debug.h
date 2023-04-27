@@ -92,17 +92,3 @@ static double TIME_F(int s)
 	time_used = TIME_F(STOP);                                                 \
 	printf("%s run %d times in %.2fs, per second run %d times, each run takes %.2f ms\n", prestr, count_t, time_used, count_t/second_t, 1000.0/(count_t/second_t));
 
-#define PERFORMANCE_TEST_TWO(prestr, func,fun) begin_t = clock();             \
-	count_t = 0;                                                              \
-	second_t =  SECOND_TEST;                                                  \
-	time_used = 0.0;                                                          \
-	signal(SIGALRM,alarmed_t);                                                \
-	alarm(second_t);                                                          \
-	run_t=1;                                                                  \
-	TIME_F(START);                                                            \
-    for(count_t=0;run_t&&count_t<0x7fffffff;count_t++){                       \
-	    func;                                                                 \
-        fun;                                                                  \
-    }                                                                         \
-	time_used = TIME_F(STOP);                                                 \
-	printf("%s run %d times in %.2fs, per second run %d times, each run takes %.2f ms\n", prestr, count_t, time_used, count_t/second_t, 1000.0/(count_t/second_t));

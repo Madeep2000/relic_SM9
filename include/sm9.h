@@ -91,6 +91,7 @@ void sm9_init();
 void sm9_clean();
 int write_file(char filename[],uint8_t output[],int output_size);
 int read_file(uint8_t **output, size_t *output_size,char filename[]);
+int read_file_t(uint8_t output[],int output_size,char filename[]);
 //void master_key_init(SM9_SIGN_MASTER_KEY key);
 //void master_key_free(SM9_SIGN_MASTER_KEY key);
 //void user_key_init(SM9_SIGN_KEY key);
@@ -130,4 +131,9 @@ int sm9_exchange_A2(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra,const char *i
 int sm9_exchange_B1(const SM9_ENC_KEY *usr,fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t klen,uint8_t *kbuf,size_t sblen,size_t sb);
 int sm9_exchange_B2(fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char *ida,size_t idalen,const char *idb, size_t idblen,size_t datalen,uint8_t *data);
 
+// sm9 speedtest
+int speedtest_sm9_sign_verify();
+int speedtest_sm9_kem_kdm();
+int speedtest_sm9_enc_dec();
+int speedtest_sm9_exchange();
 #endif
