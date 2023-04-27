@@ -4626,7 +4626,7 @@ int sm9_signature_from_der(SM9_SIGNATURE *sig, const uint8_t **in, size_t *inlen
 	return 1;
 }
 
-int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
+int sm9_kem_encrypt(const SM9_ENC_KEY *mpk, const char *id, size_t idlen,
 	size_t klen, uint8_t *kbuf, ep_t C)
 {	
 	bn_t r,N;
@@ -4749,7 +4749,7 @@ int sm9_kem_decrypt(const SM9_ENC_KEY *key, const char *id, size_t idlen, const 
 }
 //aa
 
-int sm9_do_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
+int sm9_do_encrypt(const SM9_ENC_KEY *mpk, const char *id, size_t idlen,
 	const uint8_t *in, size_t inlen,
 	ep_t C1, uint8_t *c2, uint8_t c3[SM3_HMAC_SIZE])
 {
@@ -5268,7 +5268,7 @@ int sm9_exchange_B2(fp12_t g_1,fp12_t g_2,fp12_t g_3,ep_t Ra,ep_t Rb,const char 
 	return 1;
 }
 
-int sm9_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,
+int sm9_encrypt(const SM9_ENC_KEY *mpk, const char *id, size_t idlen,
 	const uint8_t *in, size_t inlen, uint8_t *out, size_t *outlen)
 {
 	ep_t C1;
@@ -5487,7 +5487,7 @@ int sm9_sign_finish_precompute_step2(SM9_SIGN_CTX *ctx, const SM9_SIGN_KEY *key,
 	return 1;
 }
 
-int sm9_do_verify(const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen,
+int sm9_do_verify(const SM9_SIGN_KEY *mpk, const char *id, size_t idlen,
 	const SM3_CTX *sm3_ctx, const SM9_SIGNATURE *sig)
 {	
 	bn_t h1,h2;
@@ -5599,7 +5599,7 @@ int sm9_verify_update(SM9_SIGN_CTX *ctx, const uint8_t *data, size_t datalen)
 }
 
 int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,
-	const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen)
+	const SM9_SIGN_KEY *mpk, const char *id, size_t idlen)
 {
 	int ret;
 	SM9_SIGNATURE signature;
@@ -5657,13 +5657,13 @@ int speedtest_sm9_sign_verify(){
 	sm9_verify_init(&ctx);
 	sm9_verify_update(&ctx, data, datalen);
 	//if (sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen) != 1) goto err; ++j;
-	PERFORMANCE_TEST_NEW("RELIC SM9_verification ",sm9_verify_finish(&ctx, sig, siglen, &sign_master,(char *)id, idlen));
+	PERFORMANCE_TEST_NEW("RELIC SM9_verification ",sm9_verify_finish(&ctx, sig, siglen, &sign_key,(char *)id, idlen));
 	//format_bytes(stdout, 0, 0, "\nverified signature", sig, siglen);
 	//write_file("output.txt",sig,siglen);
 
 	sign_master_key_free(&sign_master);
 	sign_user_key_free(&sign_key);
-
+	printf("%s() ok\n", __FUNCTION__);
 	return 1;
 err:
 	printf("%s test %d failed\n", __FUNCTION__, j);
@@ -5731,7 +5731,7 @@ int speedtest_sm9_exchange() {
     //sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
     //sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb);
     //sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa);
-
+	printf("%s() ok\n", __FUNCTION__);
     enc_master_key_free(&msk);
     enc_user_key_free(&bob_key);
     enc_user_key_free(&alice_key);
@@ -5826,7 +5826,6 @@ int speedtest_sm9_enc_dec() {
 
     //enc_master_key_init(&msk);
     //enc_user_key_init(&enc_key);
-	
 
 	ep_null(enc_key.Ppube);
 	ep_new(enc_key.Ppube);
@@ -5852,7 +5851,6 @@ int speedtest_sm9_enc_dec() {
 	//if (sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) < 0) goto err; ++j;
 	PERFORMANCE_TEST_NEW("RELIC SM9_encrypt ",sm9_encrypt(&msk, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) );
 	//format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
-    
 	PERFORMANCE_TEST_NEW("RELIC SM9_decrypt ",sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) );	
 	// if (sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) < 0) goto err; ++j;
 	if (memcmp(data, dec, sizeof(data)) != 0) goto err; ++j;

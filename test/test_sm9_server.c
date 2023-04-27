@@ -336,7 +336,6 @@ int main(int argc, char *argv[]) {
                 }
             }
             sm9_sign_master_key_extract_key(&sign_master, (char *)id, idlen, &sign_user);
-            ep_print(sign_user.ds);
             user_datalen = ep_size_bin(sign_user.ds,0);
             user_data = (uint8_t *)malloc(user_datalen * sizeof(uint8_t));
             ep_write_bin(user_data,user_datalen,sign_user.ds,0);

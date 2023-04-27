@@ -114,13 +114,13 @@ int sm9_sign_finish(SM9_SIGN_CTX *ctx, const SM9_SIGN_KEY *key, uint8_t *sig, si
 int sm9_do_sign(const SM9_SIGN_KEY *key, const SM3_CTX *sm3_ctx, SM9_SIGNATURE *sig);
 int sm9_verify_init(SM9_SIGN_CTX *ctx);
 int sm9_verify_update(SM9_SIGN_CTX *ctx, const uint8_t *data, size_t datalen);
-int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,	const SM9_SIGN_MASTER_KEY *mpk, const char *id, size_t idlen);
+int sm9_verify_finish(SM9_SIGN_CTX *ctx, const uint8_t *sig, size_t siglen,	const SM9_SIGN_KEY *mpk, const char *id, size_t idlen);
 
 //sm9 crypto
 int sm9_enc_master_key_extract_key(SM9_ENC_MASTER_KEY *msk, const char *id, size_t idlen,SM9_ENC_KEY *key);
-int sm9_kem_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,size_t klen, uint8_t *kbuf, ep_t C);
+int sm9_kem_encrypt(const SM9_ENC_KEY *mpk, const char *id, size_t idlen,size_t klen, uint8_t *kbuf, ep_t C);
 int sm9_kem_decrypt(const SM9_ENC_KEY *key, const char *id, size_t idlen, const ep_t C,size_t klen, uint8_t *kbuf);
-int sm9_encrypt(const SM9_ENC_MASTER_KEY *mpk, const char *id, size_t idlen,const uint8_t *in, size_t inlen, uint8_t *out, size_t *outlen);
+int sm9_encrypt(const SM9_ENC_KEY *mpk, const char *id, size_t idlen,const uint8_t *in, size_t inlen, uint8_t *out, size_t *outlen);
 int sm9_decrypt(const SM9_ENC_KEY *key, const char *id, size_t idlen,const uint8_t *in, size_t inlen, uint8_t *out, size_t *outlen);
 
 

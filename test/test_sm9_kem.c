@@ -71,7 +71,7 @@ int test_sm9_kdm() {
 	if (sm9_enc_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &enc_key) < 0) goto err; ++j;
 
 
-	sm9_kem_encrypt(&msk, (char *)IDB, sizeof(IDB), klen, kbuf, C);
+	sm9_kem_encrypt(&enc_key, (char *)IDB, sizeof(IDB), klen, kbuf, C);
 
 	sm9_kem_decrypt(&enc_key,(char *)IDB, sizeof(IDB),C,klen,kbuf);
 
