@@ -51,8 +51,8 @@
 void print_usage(char *program_name) {
     printf("Relic-SM9 for client.\n");
     //printf("Usage: %s [sign|verify|kem|kdm|enc|dec] [--message=dir0] [--cipher=dir1] [--sign=dir2] [--verify=dir2'] [--kem=dir3] [--kdm=dir3'] [--enc=dir4] [--dec=dir4'] [--user-id=value] [--user-key-dir=dir5] [-h]\n", program_name);
-    printf("Mods:\n");
-    printf("[--sign|--verify|--kem|--kdm|--enc|--dec|--exchange]\n");
+    printf("Algorithms:\n");
+    printf("[--sign|--verify|--kem|--kdm|--enc|--dec|--exchange=role]\n");
     printf("Details:\n");
 
     printf("\n--sign:                  Specify the signature operation.\n");
@@ -70,7 +70,7 @@ void print_usage(char *program_name) {
 
     printf("\n--kem                    Specify the Key Encapsulation operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--master-pub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--outkey=dir2            Specify the output file as key in dir2.\n");
     printf("--outfile=dir3           Specify the output file as ciphertext in dir3.\n");
 
@@ -83,7 +83,7 @@ void print_usage(char *program_name) {
 
     printf("\n--enc                    Specify the encryption operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--master-pub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--infile=dir2            Specify the input file as plaintext/message in dir2.\n");
     printf("--outfile=dir3           Specify the output file as ciphertext in dir3.\n");
     
@@ -93,14 +93,14 @@ void print_usage(char *program_name) {
     printf("--infile=dir2            Specify the input file as ciphertext in dir2.\n");
     printf("--outfile=dir3           Specify the output file as plaintext in dir3.\n");
 
-    printf("\n--exchange=role          Specify the key exchange operation and enter your role = [initiator | responder].\n");
+    printf("\n--exchange=role          Specify the key exchange operation and ENTER your role = [initiator | responder].\n");
     printf("--user-id=value1         Specify user's id as user's public key\n");
     printf("--other-id=value2        Specify another user's id as his/her public key\n");
     printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--user-key=dir2          Specify user's private key file in dir2.\n");
     printf("--outkey=dir3            Specify the output file as session key in dir3.");
     printf("--outfile=dir4           Specify the output file as user's temporary public key in dir4.\n");
-    printf("--check                  Check the hash value if needed .\n");
+    printf("[--check]                Check the hash value if you need.\n");
 
 	printf("\nEXAMPLE1: %s --sign --inpub=pub.bin --inkey=Alicekey.bin --infile=message.bin --outfile=sig.bin\n",program_name);
     printf("EXAMPLE2: %s --verify --user-id=Alice --inpub=masterpub.bin --infile=message.bin --insig=sig.bin\n",program_name);
@@ -110,7 +110,8 @@ void print_usage(char *program_name) {
     printf("EXAMPLE6: %s --dec --user-id=Bob --inkey=key.bin --infile=cipher.bin --outfile=message.bin\n",program_name);
     printf("EXAMPLE7: %s --exchange=initiator --user-id=Alice --other-id=Bob --master-pub=masterpub.bin --user-key=alicekey.bin --outkey=sessionkey.bin --outfile=aliceRa.bin\n",program_name);
     printf("EXAMPLE8: %s --exchange=responder --user-id=Bob --other-id=Alice --master-pub=masterpub.bin --user-key=bobkey.bin --outkey=sessionkey.bin --outfile=bobRb.bin --check\n",program_name);
-    printf("\n-h                     Print this help message and exit\n\n");
+    printf("\n[-t]                     Print out some information in text form if you need.\n");
+    printf("-h                       Print this help message and exit.\n\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -233,28 +234,35 @@ int main(int argc, char *argv[]) {
                     printf("ERROR:invalid parameter!\n");
                     return -1;
                 }
+                printf("Algorithm : key exchange.\n");
                 break;
             case '@':
                 check_flag = 1;
                 break;
             case 's':
                 s_flag = 1;
+                printf("Algorithm : signature.\n");
                 break;
             case 'v':
                 v_flag = 1;
+                printf("Algorithm : signature verification.\n");
                 break;
             case 'k':
                 k_flag = 1;
+                printf("Algorithm : key encapsulation.\n");
                 break;
             case 'm':
                 m_flag = 1;
                 datalen = 65;
+                printf("Algorithm : key decapsulation.\n");
                 break;
             case 'e':
                 e_flag = 1;
+                printf("Algorithm : public key encrypt.\n");
                 break;
             case 'd':
                 d_flag = 1;
+                printf("Algorithm : decrypt.\n");
                 break;
             case 'i':
                 idlen = strlen(optarg);
@@ -398,6 +406,10 @@ int main(int argc, char *argv[]) {
         if(ofile != NULL){
             write_file(ofile,out,outlen);
         }
+        if(t_flag == 1){
+            printf("signature is\n");
+            print_bytes(out,outlen);
+        }
     }
     else if(v_flag == 1){
         ep2_read_bin(sign_user.Ppubs,pub_data,publen);
@@ -469,7 +481,7 @@ int main(int argc, char *argv[]) {
         ep_read_bin(Cb,ep_ep2_buf,ep_ep2_len); 
 
         if(check_flag == 1){
-            printf("Please ENTER the FILE directory of responder's hash option (S_B) > ");
+            printf("Please ENTER the FILE directory of responder's hash value (S_B) > ");
             scanf("%s",tempo_pubkey);
             result = read_file(&data,&datalen,tempo_pubkey);
             if(result == 0){
@@ -479,7 +491,7 @@ int main(int argc, char *argv[]) {
 
             sm9_exchange_A2(&enc_user,C,Cb,ra,user_id,idlen,other_id,other_idlen,klen,kbuf,salen,sa,datalen,data);  //data is S_B                                                      //
 
-            printf("Please ENTER the FILE directory to store your hash option (S_A) > ");
+            printf("Please ENTER the FILE directory to store your hash value (S_A) > ");
             scanf("%s",tempo_pubkey);
             write_file(tempo_pubkey,sa,salen);  // sa is S_A
 
@@ -522,7 +534,7 @@ int main(int argc, char *argv[]) {
             ep_write_bin(ep_ep2_buf,ep_ep2_len,Cb,0);       
             write_file(ofile,ep_ep2_buf,ep_ep2_len);
 
-            printf("Please ENTER the FILE directory to store your hash option > ");
+            printf("Please ENTER the FILE directory to store your hash value > ");
             scanf("%s",tempo_pubkey);
             outlen = 65;
             ep_write_bin(out,outlen,C,0);
