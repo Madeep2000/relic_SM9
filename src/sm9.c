@@ -245,8 +245,8 @@ void enc_master_key_init(SM9_ENC_MASTER_KEY *tem){
 	bn_new(tem->ke);
 	ep_null(tem->Ppube);
 	ep_new(tem->Ppube);
-	//char ke[] = "2E65B0762D042F51F0D23542B13ED8CFA2E9A0E7206361E013A283905E31F";
-	char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
+	char ke[] = "2E65B0762D042F51F0D23542B13ED8CFA2E9A0E7206361E013A283905E31F";
+	//char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
 	bn_read_str(tem->ke,ke,strlen(ke),16);
 	ep_mul_gen(tem->Ppube,tem->ke);
 	return;
@@ -5088,7 +5088,7 @@ int sm9_exchange_A2_without_check(const SM9_ENC_KEY *usr,ep_t Ra,ep_t Rb,bn_t ra
 	sm3_kdf_update(&kdf_ctx, g2_real,sizeof(g2_real));
 	sm3_kdf_update(&kdf_ctx, g3_real,sizeof(g3_real));
 	sm3_kdf_finish(&kdf_ctx, kbuf);
-
+	printf("session key is\n");
 	print_bytes(kbuf,klen);
 
 	fp12_free(g_1);

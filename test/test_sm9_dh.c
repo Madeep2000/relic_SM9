@@ -79,6 +79,8 @@ int test_sm9_exchange() {
     int salen = 32;
     int sblen = 32;
     int klen = sizeof(kbuf);
+    uint8_t output[65];
+    int outlen = 65;
 
     //Alice
     uint8_t IDA[5] = {0x41,0x6C,0x69,0x63,0x65};
@@ -91,6 +93,20 @@ int test_sm9_exchange() {
     sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
     sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb);
     sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa);
+
+    char alicetempo[] = "alicetempo.bin";
+    char bobtempo[] = "bobtempo.bin";
+    char alicehash[] = "alicehash.bin";
+    char bobhash[] = "bobhash.bin";
+
+    ep_write_bin(output,outlen,Ra,0);
+    write_file(alicetempo,output,outlen);
+    ep_write_bin(output,outlen,Rb,0);
+    write_file(bobtempo,output,outlen);
+
+    write_file(alicehash,sa,salen);
+    write_file(bobhash,sb,sblen);
+
 
     enc_master_key_free(&msk);
     enc_user_key_free(&bob_key);
