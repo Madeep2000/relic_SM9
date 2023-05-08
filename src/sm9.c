@@ -2518,7 +2518,7 @@ static void pp_pow_bn_t(fp12_t c, fp12_t a) {
 		fp12_inv_cyc_t(y0,c);
 		fp12_pow_cyc_sps_t(T0, y0, b, l, RLC_POS);   
 		fp12_sqr_cyc_t(y3,T0);
-		PERFORMANCE_TEST_NEW("RELIC 分圆子群", fp12_sqr_cyc_t(y3,T0));
+		//PERFORMANCE_TEST_NEW("RELIC 分圆子群", fp12_sqr_cyc_t(y3,T0));
 		fp12_frb_t(y2,y3,1);                         
 		fp12_mul_t(y2,y3,y2);
 		fp12_sqr_cyc_t(y2,y2);
@@ -2530,7 +2530,7 @@ static void pp_pow_bn_t(fp12_t c, fp12_t a) {
 		fp12_mul_t(y1,y0,y1);
 		fp12_inv_cyc_t(T0,T0);
 		fp12_frb_t(y3,T0,1);
-		PERFORMANCE_TEST_NEW("RELIC fro", fp12_frb_t(y3,T0,1));
+		//PERFORMANCE_TEST_NEW("RELIC fro", fp12_frb_t(y3,T0,1));
 		fp12_mul_t(y3,T0,y3);
 		fp12_sqr_cyc_t(T0,T0);
 		fp12_mul_t(y1,T0,y1);
@@ -3158,7 +3158,7 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 	
 	// e)
 	sm9_eval_g_line(g_num, g_den, T, Q1, P);  // g = g_{T,Q1}(P)
-	PERFORMANCE_TEST_NEW("RELIC 直线", sm9_eval_g_tangent(g_num, g_den, T, P));
+	//PERFORMANCE_TEST_NEW("RELIC 直线", sm9_eval_g_tangent(g_num, g_den, T, P));
 	fp12_mul_sparse(f_num, f_num, g_num);  // f = f * g = f * g_{T,Q1}(P)
 	// fp12_mul_sparse2(f_den, f_den, g_den);
 	ep2_add_projc(T, T, Q1);  // T = T + Q1

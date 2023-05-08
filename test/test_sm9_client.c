@@ -56,7 +56,7 @@ void print_usage(char *program_name) {
     printf("Details:\n");
 
     printf("\n--sign:                  Specify the signature operation.\n");
-    printf("--inpub=dir1             Specify master's public key in dir1\n");
+    printf("--master-pub=dir1        Specify master's public key in dir1\n");
     printf("--user-key=dir2          Specify user's private key file in dir2.\n");
     printf("--infile=dir3            Specify the input file as plaintext/message in dir3.\n");
     printf("--outfile=dir4           Specify the output file as signature in dir4.\n");
@@ -102,12 +102,12 @@ void print_usage(char *program_name) {
     printf("--outfile=dir4           Specify the output file as user's temporary public key in dir4.\n");
     printf("[--check]                Check the hash value if you need.\n");
 
-	printf("\nEXAMPLE1: %s --sign --inpub=pub.bin --inkey=Alicekey.bin --infile=message.bin --outfile=sig.bin\n",program_name);
-    printf("EXAMPLE2: %s --verify --user-id=Alice --inpub=masterpub.bin --infile=message.bin --insig=sig.bin\n",program_name);
-    printf("EXAMPLE3: %s --kem --user-id=Bob --inpub=masterpub.bin --outkey=key.bin --outfile=cip.bin\n",program_name);
+	printf("\nEXAMPLE1: %s --sign --master-pub=pub.bin --user-key=Alicekey.bin --infile=message.bin --outfile=sig.bin\n",program_name);
+    printf("EXAMPLE2: %s --verify --user-id=Alice --master-pub=masterpub.bin --infile=message.bin --insig=sig.bin\n",program_name);
+    printf("EXAMPLE3: %s --kem --user-id=Bob --master-pub=masterpub.bin --outkey=key.bin --outfile=cip.bin\n",program_name);
     printf("EXAMPLE4: %s --kdm --user-id=Bob --inkey=bobkey.bin --infile=cip.bin --inKEY=key.bin --outkey=key.bin\n",program_name);
-    printf("EXAMPLE5: %s --enc --user-id=Bob --inpub=masterpub.bin --infile=message.bin --outfile=cipher.bin\n",program_name);
-    printf("EXAMPLE6: %s --dec --user-id=Bob --inkey=key.bin --infile=cipher.bin --outfile=message.bin\n",program_name);
+    printf("EXAMPLE5: %s --enc --user-id=Bob --master-pub=masterpub.bin --infile=message.bin --outfile=cipher.bin\n",program_name);
+    printf("EXAMPLE6: %s --dec --user-id=Bob --user-key=key.bin --infile=cipher.bin --outfile=message.bin\n",program_name);
     printf("EXAMPLE7: %s --exchange=initiator --user-id=Alice --other-id=Bob --master-pub=masterpub.bin --user-key=alicekey.bin --outkey=sessionkey.bin --outfile=aliceRa.bin\n",program_name);
     printf("EXAMPLE8: %s --exchange=responder --user-id=Bob --other-id=Alice --master-pub=masterpub.bin --user-key=bobkey.bin --outkey=sessionkey.bin --outfile=bobRb.bin --check\n",program_name);
     printf("\n[-t]                     Print out some information in text form if you need.\n");
