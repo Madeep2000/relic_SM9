@@ -81,26 +81,30 @@ if (WITH_MPC)
 	ADD_MODULE(mpc)
 endif(WITH_MPC)
 
-# 添加sm9测试模块
+# add module : test_sm9.c 
 ADD_MODULE(sm9)
 
-# 添加sm3测试模块
+# add module : test_sm3.c 
 ADD_MODULE(sm3)
 
-# 添加sm9 签名测试模块
+# add module : test_sm9_sign.c 
 ADD_MODULE(sm9_sign)
 
-# 添加sm9 加解密测试模块
+# add module : test_sm9_encrypt.c 
 ADD_MODULE(sm9_encrypt)
 
-# 添加sm9 服务器测试模块
+# add module : test_sm9_server.c 
 ADD_MODULE(sm9_server)
 
-# 添加sm9 客户端测试模块
+# add module : test_sm9_client.c 
 ADD_MODULE(sm9_client)
-
+# add module : test_sm9_kem.c 
 ADD_MODULE(sm9_kem)
+# add module : test_sm9_dh.c 
 ADD_MODULE(sm9_dh)
+
+#ADD_MODULE(sm9_revtcp)
+#ADD_MODULE(sm9_tcp)
 
 ADD_MODULE(rand)
 ADD_MODULE(core)

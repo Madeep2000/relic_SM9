@@ -91,9 +91,14 @@ int test_sm9_exchange() {
 	if (sm9_exch_master_key_extract_key(&msk, (char *)IDA, sizeof(IDA), &alice_key) < 0) goto err; ++j;
     sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra);
     sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
+    printf("\nSK_B :");
+    print_bytes(kbuf,klen);
     sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb);
+    printf("\nSK_A :");
+    print_bytes(kbuf,klen);
     sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa);
 
+/*
     char alicetempo[] = "alicetempo.bin";
     char bobtempo[] = "bobtempo.bin";
     char alicehash[] = "alicehash.bin";
@@ -106,7 +111,7 @@ int test_sm9_exchange() {
 
     write_file(alicehash,sa,salen);
     write_file(bobhash,sb,sblen);
-
+*/
 
     enc_master_key_free(&msk);
     enc_user_key_free(&bob_key);
@@ -154,24 +159,3 @@ int main(){
     core_clean();
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

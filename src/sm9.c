@@ -245,8 +245,8 @@ void enc_master_key_init(SM9_ENC_MASTER_KEY *tem){
 	bn_new(tem->ke);
 	ep_null(tem->Ppube);
 	ep_new(tem->Ppube);
-	char ke[] = "2E65B0762D042F51F0D23542B13ED8CFA2E9A0E7206361E013A283905E31F";
-	//char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
+	//char ke[] = "2E65B0762D042F51F0D23542B13ED8CFA2E9A0E7206361E013A283905E31F";
+	char ke[] = "1EDEE3778F441F8DEA3D9FA0ACC4E07EE36C93F9A08618AF4AD85CEDE1C22";
 	bn_read_str(tem->ke,ke,strlen(ke),16);
 	ep_mul_gen(tem->Ppube,tem->ke);
 	return;
@@ -2518,6 +2518,7 @@ static void pp_pow_bn_t(fp12_t c, fp12_t a) {
 		fp12_inv_cyc_t(y0,c);
 		fp12_pow_cyc_sps_t(T0, y0, b, l, RLC_POS);   
 		fp12_sqr_cyc_t(y3,T0);
+		PERFORMANCE_TEST_NEW("RELIC 分圆子群", fp12_sqr_cyc_t(y3,T0));
 		fp12_frb_t(y2,y3,1);                         
 		fp12_mul_t(y2,y3,y2);
 		fp12_sqr_cyc_t(y2,y2);
@@ -2529,6 +2530,7 @@ static void pp_pow_bn_t(fp12_t c, fp12_t a) {
 		fp12_mul_t(y1,y0,y1);
 		fp12_inv_cyc_t(T0,T0);
 		fp12_frb_t(y3,T0,1);
+		PERFORMANCE_TEST_NEW("RELIC fro", fp12_frb_t(y3,T0,1));
 		fp12_mul_t(y3,T0,y3);
 		fp12_sqr_cyc_t(T0,T0);
 		fp12_mul_t(y1,T0,y1);
@@ -3131,7 +3133,6 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 		// fp12_sqr_t(f_den, f_den);
 
 		sm9_eval_g_tangent(g_num, g_den, T, P);
-
 		fp12_mul_sparse(f_num, f_num, g_num);
 		// fp12_mul_sparse(f_den, f_den, g_den);
 
@@ -3157,6 +3158,7 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 	
 	// e)
 	sm9_eval_g_line(g_num, g_den, T, Q1, P);  // g = g_{T,Q1}(P)
+	PERFORMANCE_TEST_NEW("RELIC 直线", sm9_eval_g_tangent(g_num, g_den, T, P));
 	fp12_mul_sparse(f_num, f_num, g_num);  // f = f * g = f * g_{T,Q1}(P)
 	// fp12_mul_sparse2(f_den, f_den, g_den);
 	ep2_add_projc(T, T, Q1);  // T = T + Q1
@@ -3173,7 +3175,7 @@ void sm9_pairing_fastest(fp12_t r, const ep2_t Q, const ep_t P){
 	// fp12_mul_t(r, f_num, f_den);  // r = f_num*f_den = f
 	fp12_copy(r, f_num);
 	pp_pow_bn_t(r,r); // r = f^{(q^12-1)/r'}
-
+	//PERFORMANCE_TEST_NEW("RELIC final exp", pp_pow_bn_t(r,r));
 	ep_free(_p);
 	bn_free(n);
 	ep2_free(T);
@@ -5722,10 +5724,10 @@ int speedtest_sm9_exchange() {
 	if (sm9_exch_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &bob_key) < 0) goto err; ++j;
 	if (sm9_exch_master_key_extract_key(&msk, (char *)IDA, sizeof(IDA), &alice_key) < 0) goto err; ++j;
 
-	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_A1 ",sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra));
-	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_B1 ",sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb));
-	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_A2 ",sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb));
-	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_B2 ",sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_A1-A4 ",sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_B1-B7 ",sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_A5-A8 ",sm9_exchange_A2(&alice_key,Ra,Rb,ra,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,salen,sa,sblen,sb));
+	PERFORMANCE_TEST_NEW("RELIC SM9_exchange_B8 ",sm9_exchange_B2(g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),salen,sa));
 
 	//sm9_exchange_A1(&alice_key, (char *)IDB, sizeof(IDB),Ra,ra);
     //sm9_exchange_B1(&bob_key,g1,g2,g3,Ra,Rb,(char *)IDA, sizeof(IDA),(char *)IDB, sizeof(IDB),klen,kbuf,sblen,sb);
@@ -5870,7 +5872,6 @@ err:
 	bn_free(msk.ke);
 	ep_free(enc_key.Ppube);
 	ep2_free(enc_key.de);
-
     //enc_master_key_free(&msk);
     //enc_user_key_free(&enc_key);
 	printf("%s test %d failed\n", __FUNCTION__, j);

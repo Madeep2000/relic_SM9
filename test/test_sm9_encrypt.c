@@ -39,7 +39,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-int test_sm9_encrypt() {
+int test_sm9_decrypt() {
 	SM9_ENC_MASTER_KEY msk;
 	SM9_ENC_KEY enc_key;
 
@@ -67,7 +67,7 @@ int test_sm9_encrypt() {
 	enc_master_key_init(&msk);
 
 	if (sm9_enc_master_key_extract_key(&msk, (char *)IDB, sizeof(IDB), &enc_key) < 0) goto err; ++j;
-	
+	//format_bytes(stdout, 0, 0, "plaintext", data, 20);
 	if (sm9_encrypt(&enc_key, (char *)IDB, sizeof(IDB), data, sizeof(data), out, &outlen) < 0) goto err; ++j;
 	format_bytes(stdout, 0, 0, "ciphertext", out, outlen);
     if (sm9_decrypt(&enc_key, (char *)IDB, sizeof(IDB), out, outlen, dec, &declen) < 0) goto err; ++j;
@@ -363,7 +363,7 @@ int main(){
 		return 0;
 	}
 
-    test_sm9_encrypt();
+    test_sm9_decrypt();
 
     core_clean();
     return 0;

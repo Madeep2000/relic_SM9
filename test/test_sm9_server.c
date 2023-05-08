@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
 		core_clean();
 		return 0;
 	}
+    
     SM9_SIGN_MASTER_KEY sign_master;
     SM9_ENC_MASTER_KEY enc_master;
     SM9_SIGN_KEY sign_user;
