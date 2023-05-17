@@ -89,7 +89,7 @@ void print_usage(char *program_name) {
     
     printf("\n--dec                    Specify the decryption operation.\n");
     printf("--user-id=value          Specify user's id as user's public key\n");
-    printf("--user-key=dir1             Specify user's private key file in dir1.\n");
+    printf("--user-key=dir1          Specify user's private key file in dir1.\n");
     printf("--infile=dir2            Specify the input file as ciphertext in dir2.\n");
     printf("--outfile=dir3           Specify the output file as plaintext in dir3.\n");
 
@@ -102,7 +102,7 @@ void print_usage(char *program_name) {
     printf("--outfile=dir4           Specify the output file as user's temporary public key in dir4.\n");
     printf("[--check]                Check the hash value if you need.\n");
 
-	printf("\nEXAMPLE1: %s --sign --master-pub=pub.bin --user-key=Alicekey.bin --infile=message.bin --outfile=sig.bin\n",program_name);
+	printf("\nEXAMPLE1: %s --sign --master-pub=masterpub.bin --user-key=alicekey.abc --infile=message.bin --outfile=sig.bin\n",program_name);
     printf("EXAMPLE2: %s --verify --user-id=Alice --master-pub=masterpub.bin --infile=message.bin --insig=sig.bin\n",program_name);
     printf("EXAMPLE3: %s --kem --user-id=Bob --master-pub=masterpub.bin --outkey=key.bin --outfile=cip.bin\n",program_name);
     printf("EXAMPLE4: %s --kdm --user-id=Bob --inkey=bobkey.bin --infile=cip.bin --inKEY=key.bin --outkey=key.bin\n",program_name);
@@ -427,6 +427,12 @@ int main(int argc, char *argv[]) {
         if(ofile != NULL){
             write_file(ofile,out,outlen);
         }
+        if(t_flag == 1){
+            printf("Message is\n");
+            print_bytes(data,datalen);
+            printf("And ciphertext is\n");
+            print_bytes(out,outlen);
+        } 
     }
     else if(d_flag == 1){
         ep2_read_bin(enc_user.de,key_data,keylen);
@@ -434,6 +440,12 @@ int main(int argc, char *argv[]) {
         if(ofile != NULL){
             write_file(ofile,out,outlen);
         }
+        if(t_flag == 1){
+            printf("Ciphertext is\n");
+            print_bytes(data,datalen);
+            printf("And plaintext is\n");
+            print_bytes(out,outlen);
+        } 
     }
     else if(k_flag == 1){
         //kem
